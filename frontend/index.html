@@ -53,9 +53,10 @@
         <div class="card"><span>Total de pedidos</span><strong id="totalPedidos">0</strong></div>
         <div class="card"><span>Tempo médio</span><strong id="tempoMedio">0 min</strong></div>
       </div>
+      <h3 style="margin-top:32px">Relatórios</h3>
       <div style="display:flex;gap:12px;margin-bottom:20px">
-        <button class="action" onclick="gerarRelatorioPDF()" style="flex:1">Baixar PDF</button>
-        <button class="action" onclick="gerarRelatorioExcel()" style="flex:1">Baixar Excel</button>
+        <button onclick="gerarRelatorioPDF()" style="flex:1;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;background:#d32f2f;color:#fff;box-shadow:0 8px 18px rgba(211,47,47,.22);transition:.2s">Baixar PDF</button>
+        <button onclick="gerarRelatorioExcel()" style="flex:1;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;background:#2e7d32;color:#fff;box-shadow:0 8px 18px rgba(46,125,50,.22);transition:.2s">Baixar Excel</button>
       </div>
       <h3>Status dos pedidos</h3>
       <div id="statusPedidos"></div>
