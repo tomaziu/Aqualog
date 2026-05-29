@@ -2,6 +2,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+
+class AdminLogin(BaseModel):
+    senha: str
 from typing import Optional
 import os
 from pathlib import Path
@@ -85,6 +88,13 @@ def excluir_cliente(id: int):
         raise HTTPException(400, 'Este cliente possui pedidos. Exclua os pedidos primeiro.')
     finally:
         cur.close(); con.close()
+
+# Admin
+@app.post('/admin/login')
+def admin_login(login: AdminLogin):
+    if login.senha != os.getenv('ADMIN_PASSWORD', 'admin123'):
+        raise HTTPException(401, 'Senha incorreta')
+    return {'mensagem': 'OK'}
 
 # Entregadores
 @app.get('/entregadores')
