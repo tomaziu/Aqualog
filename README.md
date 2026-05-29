@@ -46,7 +46,9 @@ aqualog/
 
 ### Admin (`/`)
 - Dashboard com total de pedidos, tempo médio, status e roteirização por bairro
-- Botões para exportar relatório em **PDF** (abre para impressão) e **Excel** (.xlsx com abas: Pedidos, Clientes, Entregadores, Produtos, Roteirização)
+- Seção **Relatórios** com dois botões:
+  - **Baixar PDF** (vermelho) — abre página formatada para impressão com total de pedidos, status, roteirização e últimos 50 pedidos
+  - **Baixar Excel** (verde) — gera `.xlsx` com 5 abas: Pedidos, Clientes, Entregadores, Produtos e Roteirização
 - CRUD de Clientes (com bairros reais de Caxias-MA)
 - CRUD de Entregadores (com código de acesso para login)
 - CRUD de Produtos
@@ -70,6 +72,13 @@ aqualog/
 # Execute no MySQL Workbench ou terminal:
 backend/schema.sql
 ```
+
+> Se os dados já existem mas estão com acentuação quebrada ("?"), rode o script de reset:
+> ```bash
+> cd backend
+> venv\Scripts\activate
+> python reset_db.py
+> ```
 
 ### 2. Configurar backend
 
