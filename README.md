@@ -1,45 +1,82 @@
 # ÁquaLog - Sistema de Controle de Entregas
 
-Sistema completo para uma distribuidora de água, com controle de clientes, entregadores, produtos, pedidos, status de entrega, roteirização simples por bairro e relatório de tempo médio.
+Sistema completo para uma distribuidora de água, com controle de clientes, entregadores, produtos, pedidos, status de entrega, roteirização simples por bairro e relatório com exportação PDF/XLSX.
 
 ## Tecnologias
-- Backend: Python + FastAPI
-- Banco de dados: MySQL
-- Frontend: HTML, CSS e JavaScript
 
-## Como rodar
+- **Backend:** Python + FastAPI
+- **Banco de dados:** MySQL (charset utf8mb4)
+- **Frontend:** HTML, CSS e JavaScript vanilla (modular)
 
-### 1. Criar banco MySQL
-Abra o MySQL Workbench ou terminal e execute o arquivo:
+## Estrutura do projeto
 
 ```
+aqualog/
+├── backend/
+│   ├── main.py              # Montagem da app e roteadores
+│   ├── models.py            # Pydantic models
+│   ├── database.py          # Conexão MySQL
+│   ├── routes/
+│   │   ├── admin.py         # Login do admin
+│   │   ├── clientes.py      # CRUD clientes
+│   │   ├── entregadores.py  # CRUD + login + pedidos do entregador
+│   │   ├── pedidos.py       # CRUD + status + dashboard
+│   │   └── produtos.py      # CRUD produtos
+│   ├── requirements.txt
+│   └── schema.sql
+├── frontend/
+│   ├── index.html           # Admin (com login por senha)
+│   ├── entregador.html      # Tela do entregador (login com código)
+│   ├── style.css
+│   └── js/
+│       ├── api.js           # Requisições HTTP
+│       ├── utils.js         # Funções utilitárias
+│       ├── login.js         # Login do admin
+│       ├── dashboard.js     # Dashboard
+│       ├── clientes.js      # CRUD + filtro clientes
+│       ├── entregadores.js  # CRUD + filtro entregadores
+│       ├── produtos.js      # CRUD + filtro produtos
+│       ├── pedidos.js       # CRUD + filtro + status pedidos
+│       ├── relatorio.js     # Exportação PDF e Excel
+│       └── app.js           # Orquestração e formulários
+└── docs/
+```
+
+## Funcionalidades
+
+### Admin (`/`)
+- Dashboard com total de pedidos, tempo médio, status e roteirização por bairro
+- Botões para exportar relatório em **PDF** (abre para impressão) e **Excel** (.xlsx com abas: Pedidos, Clientes, Entregadores, Produtos, Roteirização)
+- CRUD de Clientes (com bairros reais de Caxias-MA)
+- CRUD de Entregadores (com código de acesso para login)
+- CRUD de Produtos
+- Gerenciamento de Pedidos (criação, filtro por nome/entregador/bairro/produto/status, alteração de status)
+- Edição inline nas tabelas
+- Filtros em todas as listas
+- **Proteção por senha** (configurável via `ADMIN_PASSWORD`)
+
+### Entregador (`/entregador.html`)
+- Login com código de acesso
+- Visualiza apenas os pedidos atribuídos a ele
+- Vê endereço, bairro, referência, telefone do cliente e produto
+- Botões: "Saiu p/ entrega" e "Entregue"
+- Filtros: Todos / Em rota / Preparando / Entregues
+
+## Como rodar local
+
+### 1. Criar banco MySQL
+
+```bash
+# Execute no MySQL Workbench ou terminal:
 backend/schema.sql
 ```
 
-Isso cria o banco `aqualog`, as tabelas e já insere dados de exemplo (15 clientes, 3 entregadores, 5 produtos, 15 pedidos de Caxias-MA).
-
 ### 2. Configurar backend
-Entre na pasta `backend`:
 
 ```bash
 cd backend
-```
-
-Crie o ambiente virtual:
-
-```bash
 py -m venv venv
-```
-
-Ative:
-
-```bash
 venv\Scripts\activate
-```
-
-Instale as dependências:
-
-```bash
 pip install -r requirements.txt
 ```
 
@@ -51,60 +88,52 @@ Configure o arquivo `.env` com seu usuário e senha do MySQL.
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-A API abre em:
+API em `http://127.0.0.1:8000` e docs em `http://127.0.0.1:8000/docs`.
 
-```text
-http://127.0.0.1:8000
-```
+### 4. Acessar
 
-Documentação automática:
+- **Admin:** `http://127.0.0.1:8000` (login com senha)
+- **Entregador:** `http://127.0.0.1:8000/entregador.html` (login com código de acesso)
 
-```text
-http://127.0.0.1:8000/docs
-```
+## Deploy online (Cloudflare Tunnel)
 
-### 4. Abrir o frontend
-Use o `iniciar_server.bat` (recomendado) ou abra manualmente:
+O sistema pode ser exposto na internet sem hospedagem paga:
 
-```text
-http://127.0.0.1:8000
-http://127.0.0.1:8000/entregador.html
-```
+1. Instale o `cloudflared`:
+   ```powershell
+   winget install Cloudflare.cloudflared
+   ```
 
-> O `iniciar_server.bat` inicia o servidor com `--host 0.0.0.0` (acessível de outros dispositivos na rede), aguarda 3 segundos e abre o frontend automaticamente.
+2. Inicie o servidor:
+   ```powershell
+   cd backend
+   .\venv\Scripts\activate
+   uvicorn main:app --host 0.0.0.0 --port 8000
+   ```
 
-## Páginas
+3. Inicie o túnel (em outro terminal):
+   ```powershell
+   cloudflared tunnel --url http://localhost:8000
+   ```
 
-### Admin (`/`)
-- Dashboard com total de pedidos, tempo médio, status e roteirização por bairro
-- CRUD de Clientes (com bairros reais de Caxias-MA)
-- CRUD de Entregadores (com código de acesso para login)
-- CRUD de Produtos
-- Gerenciamento de Pedidos (criação, filtro por status, alteração de status)
-- Edição inline nas tabelas
-
-### Entregador (`/entregador.html`)
-- Login com código de acesso
-- Visualiza apenas os pedidos atribuídos a ele
-- Vê endereço, bairro, referência, telefone do cliente e produto
-- Botões: "Saiu p/ entrega" e "Entregue"
-- Filtros: Todos / Em rota / Preparando / Entregues
+4. Um URL público será gerado. Compartilhe com os entregadores.
 
 ## Fluxo do pedido
+
+```
 Recebido → Em preparo → Saiu para entrega → Entregue
+```
 
 ## Entregadores (dados de exemplo)
-| Nome | Código de acesso | Veículo |
-|------|-----------------|---------|
+
+| Nome | Código | Veículo |
+|------|--------|---------|
 | Lucas Mendes | lucas123 | Fiorino |
 | Rafael Santos | rafael123 | Moto |
 | Diego Costa | diego123 | Kombi |
 
 ## Acessar do celular
-1. Descubra o IP do computador na rede (ex: 10.0.0.129)
-2. No celular (mesma rede Wi-Fi), abra:
-   - `http://SEU_IP:8000` para o admin
-   - `http://SEU_IP:8000/entregador.html` para o entregador
-3. Se não conectar, libere a porta 8000 no firewall do Windows
 
-> ⚠️ **Importante:** Não abra o `index.html` ou `entregador.html` direto pelo Explorador de Arquivos (duplo clique). O frontend precisa ser servido pelo backend para conseguir carregar os dados do banco. Sempre use `http://127.0.0.1:8000` ou o `iniciar_server.bat`.
+1. Descubra o IP do computador na rede (ex: 10.0.0.129)
+2. No celular (mesma rede Wi-Fi), abra `http://SEU_IP:8000`
+3. Se não conectar, libere a porta 8000 no firewall do Windows

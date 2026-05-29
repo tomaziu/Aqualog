@@ -53,6 +53,10 @@
         <div class="card"><span>Total de pedidos</span><strong id="totalPedidos">0</strong></div>
         <div class="card"><span>Tempo médio</span><strong id="tempoMedio">0 min</strong></div>
       </div>
+      <div style="display:flex;gap:12px;margin-bottom:20px">
+        <button class="action" onclick="gerarRelatorioPDF()" style="flex:1">Baixar PDF</button>
+        <button class="action" onclick="gerarRelatorioExcel()" style="flex:1">Baixar Excel</button>
+      </div>
       <h3>Status dos pedidos</h3>
       <div id="statusPedidos"></div>
       <h3>Roteirização por bairro</h3>
@@ -114,6 +118,7 @@
     </section>
   </main>
 
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/login.js"></script>
@@ -122,6 +127,7 @@
   <script src="js/entregadores.js"></script>
   <script src="js/produtos.js"></script>
   <script src="js/pedidos.js"></script>
+  <script src="js/relatorio.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
