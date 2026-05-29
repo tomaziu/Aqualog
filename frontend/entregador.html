@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ÁquaLog - Entregador</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background: #f0f2f5; display: block; padding: 0; }
+    #tela-login { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    #tela-login h1 { font-size: 1.6rem; color: #1a73e8; margin-bottom: 8px; }
+    #tela-login p { color: #666; margin-bottom: 24px; }
+    #tela-login input { width: 100%; max-width: 280px; padding: 14px; font-size: 1.1rem; text-align: center; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 16px; outline: none; }
+    #tela-login input:focus { border-color: #1a73e8; }
+    #tela-login button { width: 100%; max-width: 280px; padding: 14px; font-size: 1.1rem; background: #1a73e8; color: #fff; border: none; border-radius: 10px; cursor: pointer; }
+    #tela-login .erro { color: #d32f2f; margin-top: 12px; font-size: 0.9rem; }
+
+    #tela-pedidos { display: none; padding: 16px; max-width: 500px; margin: 0 auto; }
+    #tela-pedidos .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    #tela-pedidos .topo h1 { font-size: 1.3rem; color: #1a73e8; }
+    #tela-pedidos .topo button { background: none; border: none; color: #d32f2f; font-size: 0.9rem; cursor: pointer; padding: 8px; }
+    .filtros { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+    .filtros button { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
+    .filtros button.ativo { background: #1a73e8; color: #fff; border-color: #1a73e8; }
+
+    .pedido-card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .pedido-card .topo-card { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
+    .pedido-card .topo-card strong { color: #1a73e8; }
+    .pedido-card .status-badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
+    .status-recebido { background: #fff3e0; color: #e65100; }
+    .status-em_preparo { background: #fff8e1; color: #f57f17; }
+    .status-saiu_para_entrega { background: #e3f2fd; color: #1565c0; }
+    .status-entregue { background: #e8f5e9; color: #2e7d32; }
+    .status-cancelado { background: #ffebee; color: #c62828; }
+    .pedido-card .endereco { font-size: 0.9rem; color: #333; margin: 4px 0; }
+    .pedido-card .info { font-size: 0.85rem; color: #666; margin: 2px 0; }
+    .pedido-card .acoes-card { display: flex; gap: 8px; margin-top: 12px; }
+    .pedido-card .acoes-card button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+    .btn-sair { background: #1a73e8; color: #fff; }
+    .btn-entregue { background: #2e7d32; color: #fff; }
+    .btn-voltar { background: #e0e0e0; color: #333; }
+    .vazio { text-align: center; color: #999; padding: 40px 0; }
+    #info-entregador { font-size: 0.85rem; color: #555; }
+  </style>
+</head>
+<body>
+  <div id="tela-login">
+    <h1>ÁquaLog</h1>
+    <p>Entregador - Acesse seus pedidos</p>
+    <input id="input-codigo" type="text" placeholder="Digite seu código" maxlength="20" autocomplete="off">
+    <button onclick="fazerLogin()">Entrar</button>
+    <div id="erro-login" class="erro"></div>
+  </div>
+
+  <div id="tela-pedidos">
+    <div class="topo">
+      <div>
+        <h1>ÁquaLog</h1>
+        <div id="info-entregador"></div>
+      </div>
+      <button onclick="sair()">Sair</button>
+    </div>
+
+    <div class="filtros">
+      <button class="ativo" data-filtro="todos" onclick="filtrar('todos')">Todos</button>
+      <button data-filtro="saiu_para_entrega" onclick="filtrar('saiu_para_entrega')">Em rota</button>
+      <button data-filtro="em_preparo" onclick="filtrar('em_preparo')">Preparando</button>
+      <button data-filtro="entregue" onclick="filtrar('entregue')">Entregues</button>
+    </div>
+
+    <div id="lista-pedidos"></div>
+  </div>
+
+  <script src="entregador.js"></script>
+</body>
+</html>
