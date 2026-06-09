@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: example_root_password
+          MYSQL_DATABASE: aqualog_test
+          MYSQL_USER: aqualog_user
+          MYSQL_PASSWORD: aqualog_password
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      MYSQL_HOST: localhost
+      MYSQL_PORT: 3306
+      MYSQL_USER: aqualog_user
+      MYSQL_PASSWORD: aqualog_password
+      MYSQL_DATABASE: aqualog_test
+      MERCADO_PAGO_ACCESS_TOKEN: test_token
+      SECRET_KEY: test_secret_key_for_testing_only
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Wait for MySQL
+        run: |
+          until mysqladmin ping -h"$MYSQL_HOST" -P"$MYSQL_PORT" -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" --silent; do
+            echo "Waiting for MySQL..."
+            sleep 1
+          done
+
+      - name: Run migrations
+        run: |
+          cd backend
+          python migrate.py
+
+      - name: Run linter (ruff)
+        run: |
+          cd backend
+          ruff check .
+
+      - name: Run tests
+        run: |
+          cd backend
+          pytest -v

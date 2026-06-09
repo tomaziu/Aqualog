@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - backend/.env
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app/backend:cached
+      - ./frontend:/app/frontend:cached
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+
+  db:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: example_root_password
+      MYSQL_DATABASE: aqualog
+      MYSQL_USER: aqualog_user
+      MYSQL_PASSWORD: aqualog_password
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:
