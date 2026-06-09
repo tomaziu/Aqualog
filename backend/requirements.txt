@@ -3,3 +3,9 @@ uvicorn
 mysql-connector-python
 python-dotenv
 pydantic
+pytest
+httpx
+python-jose[cryptography]
+bcrypt
+loguru
+ruff

@@ -1,84 +1,81 @@
 # ÁquaLog - Sistema de Controle de Entregas
 
-Sistema completo para uma distribuidora de água, com controle de clientes, entregadores, produtos, pedidos, status de entrega, roteirização simples por bairro e relatório com exportação PDF/XLSX.
+Sistema para distribuidora de água com pedido online, painel administrativo, tela do entregador, controle de estoque, status de entrega e relatórios.
 
 ## Tecnologias
 
 - **Backend:** Python + FastAPI
-- **Banco de dados:** MySQL (charset utf8mb4)
-- **Frontend:** HTML, CSS e JavaScript vanilla (modular)
+- **Banco de dados:** MySQL
+- **Frontend:** HTML, CSS e JavaScript vanilla
+- **Testes:** pytest + httpx
 
-## Estrutura do projeto
+## Telas
+
+- **Cliente:** `http://127.0.0.1:8000/cliente.html`
+  - escolhe produto
+  - informa endereço
+  - informa número da casa separadamente
+  - escolhe forma de pagamento
+  - recebe QR Code Pix quando escolhe Mercado Pago
+  - recebe um código de entrega
+  - acompanha status do pedido
+  - vê a data de criação do pedido
+  - conversa com o atendimento pela aba Conversa
+- **Admin:** `http://127.0.0.1:8000`
+  - dashboard
+  - CRUD de clientes, entregadores e produtos
+  - gerenciamento de pedidos
+  - atribuição de entregador para pedidos feitos no site
+  - acompanhamento de pagamento Pix
+  - suporte por conversa com cliente
+  - relatórios PDF/XLSX
+- **Entregador:** `http://127.0.0.1:8000/entregador.html`
+  - login por código
+  - visualiza pedidos atribuídos
+  - finaliza entrega com o código informado pelo cliente
+
+## Estrutura
 
 ```
 aqualog/
 ├── backend/
-│   ├── main.py              # Montagem da app e roteadores
-│   ├── models.py            # Pydantic models
-│   ├── database.py          # Conexão MySQL
+│   ├── main.py
+│   ├── auth.py
+│   ├── database.py
+│   ├── models.py
+│   ├── sse_manager.py
 │   ├── routes/
-│   │   ├── admin.py         # Login do admin
-│   │   ├── clientes.py      # CRUD clientes
-│   │   ├── entregadores.py  # CRUD + login + pedidos do entregador
-│   │   ├── pedidos.py       # CRUD + status + dashboard
-│   │   └── produtos.py      # CRUD produtos
+│   │   ├── admin.py
+│   │   ├── clientes.py
+│   │   ├── entregadores.py
+│   │   ├── pedidos.py
+│   │   ├── produtos.py
+│   │   └── site.py
+│   ├── tests/
 │   ├── requirements.txt
 │   └── schema.sql
 ├── frontend/
-│   ├── index.html           # Admin (com login por senha)
-│   ├── entregador.html      # Tela do entregador (login com código)
+│   ├── index.html
+│   ├── cliente.html
+│   ├── entregador.html
 │   ├── style.css
 │   └── js/
-│       ├── api.js           # Requisições HTTP
-│       ├── utils.js         # Funções utilitárias
-│       ├── login.js         # Login do admin
-│       ├── dashboard.js     # Dashboard
-│       ├── clientes.js      # CRUD + filtro clientes
-│       ├── entregadores.js  # CRUD + filtro entregadores
-│       ├── produtos.js      # CRUD + filtro produtos
-│       ├── pedidos.js       # CRUD + filtro + status pedidos
-│       ├── relatorio.js     # Exportação PDF e Excel
-│       └── app.js           # Orquestração e formulários
 └── docs/
 ```
 
-## Funcionalidades
+## Fluxo Do Pedido
 
-### Admin (`/`)
-- Dashboard com total de pedidos, tempo médio, status e roteirização por bairro
-- Seção **Relatórios** com dois botões:
-  - **Baixar PDF** (vermelho) — abre página formatada para impressão com total de pedidos, status, roteirização e últimos 50 pedidos
-  - **Baixar Excel** (verde) — gera `.xlsx` com 5 abas: Pedidos, Clientes, Entregadores, Produtos e Roteirização
-- CRUD de Clientes (com bairros reais de Caxias-MA)
-- CRUD de Entregadores (com código de acesso para login)
-- CRUD de Produtos
-- Gerenciamento de Pedidos (criação, filtro por nome/entregador/bairro/produto/status, alteração de status)
-- Edição inline nas tabelas
-- Filtros em todas as listas
-- **Proteção por senha** (configurável via `ADMIN_PASSWORD`)
+```
+Cliente cria pedido → Admin atribui entregador → Entregador sai para entrega → Cliente informa código → Pedido entregue
+```
 
-### Entregador (`/entregador.html`)
-- Login com código de acesso
-- Visualiza apenas os pedidos atribuídos a ele
-- Vê endereço, bairro, referência, telefone do cliente e produto
-- Botões: "Saiu p/ entrega" e "Entregue"
-- Filtros: Todos / Em rota / Preparando / Entregues
+O fluxo principal é o site do cliente. A criação de pedido no admin permanece como pedido manual para atendimento por telefone, balcão ou testes.
 
-## Como rodar local
+## Como Rodar
 
 ### 1. Criar banco MySQL
 
-```bash
-# Execute no MySQL Workbench ou terminal:
-backend/schema.sql
-```
-
-> Se os dados já existem mas estão com acentuação quebrada ("?"), rode o script de reset:
-> ```bash
-> cd backend
-> venv\Scripts\activate
-> python reset_db.py
-> ```
+Execute `backend/schema.sql` no MySQL.
 
 ### 2. Configurar backend
 
@@ -89,7 +86,18 @@ venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Configure o arquivo `.env` com seu usuário e senha do MySQL.
+Configure o `.env`:
+
+```env
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=sua_senha
+DB_NAME=aqualog
+JWT_SECRET=troque-este-segredo
+ADMIN_PASSWORD=admin123
+PIX_CHAVE=sua-chave-pix
+MERCADO_PAGO_ACCESS_TOKEN=
+```
 
 ### 3. Rodar API
 
@@ -97,52 +105,22 @@ Configure o arquivo `.env` com seu usuário e senha do MySQL.
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-API em `http://127.0.0.1:8000` e docs em `http://127.0.0.1:8000/docs`.
+Ou use:
 
-### 4. Acessar
-
-- **Admin:** `http://127.0.0.1:8000` (login com senha)
-- **Entregador:** `http://127.0.0.1:8000/entregador.html` (login com código de acesso)
-
-## Deploy online (Cloudflare Tunnel)
-
-O sistema pode ser exposto na internet sem hospedagem paga:
-
-1. Instale o `cloudflared`:
-   ```powershell
-   winget install Cloudflare.cloudflared
-   ```
-
-2. Inicie o servidor:
-   ```powershell
-   cd backend
-   .\venv\Scripts\activate
-   uvicorn main:app --host 0.0.0.0 --port 8000
-   ```
-
-3. Inicie o túnel (em outro terminal):
-   ```powershell
-   cloudflared tunnel --url http://localhost:8000
-   ```
-
-4. Um URL público será gerado. Compartilhe com os entregadores.
-
-## Fluxo do pedido
-
-```
-Recebido → Em preparo → Saiu para entrega → Entregue
+```text
+C:\Users\Admin\Downloads\aqualog_projeto\iniciar_tudo.bat
 ```
 
-## Entregadores (dados de exemplo)
+## Pagamento
 
-| Nome | Código | Veículo |
-|------|--------|---------|
-| Lucas Mendes | lucas123 | Fiorino |
-| Rafael Santos | rafael123 | Moto |
-| Diego Costa | diego123 | Kombi |
+O site permite escolher **Pix**, **Dinheiro** ou **Cartão**.
 
-## Acessar do celular
+Com Pix, o sistema usa `MERCADO_PAGO_ACCESS_TOKEN` para gerar QR Code, Pix copia e cola e link de pagamento. O admin pode verificar o pagamento no painel. `PIX_CHAVE` fica apenas como fallback/manual.
 
-1. Descubra o IP do computador na rede (ex: 10.0.0.129)
-2. No celular (mesma rede Wi-Fi), abra `http://SEU_IP:8000`
-3. Se não conectar, libere a porta 8000 no firewall do Windows
+## Rodar Testes
+
+```bash
+cd backend
+.\venv\Scripts\activate
+pytest tests/ -v
+```

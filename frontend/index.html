@@ -4,29 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ÁquaLog</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="style.css">
   <style>
     #tela-login-admin {
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: radial-gradient(circle at top left, rgba(22,199,217,.20), transparent 32%),
-                  linear-gradient(135deg, #f7fcff 0%, #f3f9fc 52%, #eaf8fb 100%);
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
     }
     #tela-login-admin .box {
-      background: #fff; padding: 40px; border-radius: 24px; box-shadow: 0 18px 45px rgba(6,59,92,.12);
-      width: 100%; max-width: 340px; text-align: center;
+      background: #fff; padding: 40px 36px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,.08);
+      width: 100%; max-width: 360px; text-align: center;
     }
-    #tela-login-admin h1 { margin: 0 0 4px; color: #063b5c; font-size: 28px; }
-    #tela-login-admin p { color: #66788a; margin: 0 0 24px; }
-    #tela-login-admin input { width: 100%; padding: 14px; font-size: 1rem; text-align: center; border: 2px solid #d9e8f0; border-radius: 14px; margin-bottom: 16px; outline: none; box-sizing: border-box; }
-    #tela-login-admin input:focus { border-color: #16c7d9; }
-    #tela-login-admin button { width: 100%; padding: 14px; font-size: 1rem; background: linear-gradient(135deg, #0877b8, #16c7d9); color: #fff; border: none; border-radius: 14px; cursor: pointer; font-weight: 700; }
-    #tela-login-admin .erro { color: #d32f2f; margin-top: 12px; font-size: .9rem; }
+    #tela-login-admin h1 { margin: 0 0 4px; color: #1a73e8; font-size: 26px; font-weight: 700; }
+    #tela-login-admin p { color: #6b7280; margin: 0 0 24px; font-size: 14px; }
+    #tela-login-admin input { width: 100%; padding: 12px 16px; font-size: .95rem; text-align: center; border: 1.5px solid #e5e7eb; border-radius: 10px; margin-bottom: 14px; outline: none; box-sizing: border-box; transition: .2s ease; }
+    #tela-login-admin input:focus { border-color: #1a73e8; box-shadow: 0 0 0 3px rgba(26,115,232,.12); }
+    #tela-login-admin button { width: 100%; padding: 12px; font-size: .95rem; background: #1a73e8; color: #fff; border: none; border-radius: 10px; cursor: pointer; font-weight: 600; transition: .2s ease; }
+    #tela-login-admin button:hover { background: #1557b0; box-shadow: 0 4px 12px rgba(26,115,232,.3); transform: translateY(-1px); }
+    #tela-login-admin button:active { transform: translateY(0); }
+    #tela-login-admin .erro { color: #dc2626; margin-top: 12px; font-size: .85rem; font-weight: 500; }
+    #hamburger { display: none; position: fixed; top: 12px; left: 12px; z-index: 1000; background: #1a73e8; color: #fff; border: none; font-size: 22px; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(26,115,232,.3); transition: .2s ease; }
+    #hamburger:hover { background: #1557b0; }
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+    .toast { padding: 14px 20px; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 500; box-shadow: 0 8px 20px rgba(0,0,0,.15); transition: opacity .3s ease, transform .3s ease; max-width: 380px; word-break: break-word; }
+    .toast-sucesso { background: #16a34a; }
+    .toast-erro { background: #dc2626; }
+    #loading-overlay { display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(255,255,255,.7); align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+    #loading-overlay.ativo { display: flex; }
+    .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: #1a73e8; border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    body.loading #loading-overlay { display: flex; }
+    @media (max-width: 850px) {
+      #hamburger { display: flex; }
+      aside.mobile-hidden { display: none; }
+      aside.mobile-show { display: flex; position: fixed; z-index: 999; }
+    }
   </style>
 </head>
 <body>
+  <div id="loading-overlay"><div class="spinner"></div></div>
+  <div id="toast-container"></div>
+  <button id="hamburger" onclick="toggleSidebar()">&#9776;</button>
+
   <div id="tela-login-admin">
     <div class="box">
+      <img src="logo.png" alt="ÁquaLog" style="width:100px;display:block;margin:0 auto 8px">
       <h1>ÁquaLog</h1>
       <p>Admin - Acesso restrito</p>
       <input id="admin-senha" type="password" placeholder="Digite a senha" autocomplete="off">
@@ -35,15 +61,26 @@
     </div>
   </div>
 
-  <aside>
-    <h1>ÁquaLog</h1>
-    <p>Distribuidora de Água</p>
-    <button onclick="mostrarTela('dashboard')">Dashboard</button>
-    <button onclick="mostrarTela('clientes')">Clientes</button>
-    <button onclick="mostrarTela('entregadores')">Entregadores</button>
-    <button onclick="mostrarTela('produtos')">Produtos</button>
-    <button onclick="mostrarTela('pedidos')">Pedidos</button>
-    <button onclick="logoutAdmin()" style="margin-top:20px;border-color:rgba(255,80,80,.4);color:#ff6b6b;">Sair</button>
+  <aside id="sidebar">
+    <div class="sidebar-brand">
+      <img src="logo.png" alt="ÁquaLog">
+      <p class="sidebar-subtitle">Distribuidora de Água</p>
+    </div>
+    <div id="sseStatus" class="sse-status sse-offline">
+      <span></span>
+      <div><strong>Tempo real</strong><em>Desconectado</em></div>
+    </div>
+    <nav class="sidebar-nav" aria-label="Menu administrativo">
+      <button onclick="mostrarTela('dashboard')">&#9783; Dashboard</button>
+      <button onclick="mostrarTela('clientes')">&#64; Clientes</button>
+      <button onclick="mostrarTela('entregadores')">&#9881; Entregadores</button>
+      <button onclick="mostrarTela('produtos')">&#9733; Produtos</button>
+      <button onclick="mostrarTela('pedidos')">&#9992; Pedidos</button>
+      <button onclick="mostrarTela('suporte')">&#9742; Suporte</button>
+      <button onclick="mostrarTela('cupons')">&#37; Cupons</button>
+      <button onclick="mostrarTela('configuracoes')">&#9881; Configurações</button>
+    </nav>
+    <button class="sidebar-logout" onclick="logoutAdmin()">Sair</button>
   </aside>
 
   <main>
@@ -51,17 +88,52 @@
       <h2>Dashboard</h2>
       <div class="cards">
         <div class="card"><span>Total de pedidos</span><strong id="totalPedidos">0</strong></div>
+        <div class="card"><span>Aguardando Pix</span><strong id="pedidosAguardandoPix">0</strong></div>
+        <div class="card"><span>Pix pagos</span><strong id="pedidosPagos">0</strong></div>
+        <div class="card"><span>Sem entregador</span><strong id="pedidosSemEntregador">0</strong></div>
+        <div class="card"><span>Pix expirados</span><strong id="pedidosPixExpirados">0</strong></div>
+        <div class="card"><span>Total vendido</span><strong id="totalVendido">R$ 0,00</strong></div>
+        <div class="card"><span>Ticket médio</span><strong id="ticketMedio">R$ 0,00</strong></div>
+        <div class="card"><span>Vendas hoje</span><strong id="vendasHoje">R$ 0,00</strong></div>
+        <div class="card"><span>Últimos 7 dias</span><strong id="vendasSemana">R$ 0,00</strong></div>
+        <div class="card"><span>Últimos 30 dias</span><strong id="vendasMes">R$ 0,00</strong></div>
+        <div class="card"><span>Estoque baixo</span><strong id="produtosEstoqueBaixo">0</strong></div>
         <div class="card"><span>Tempo médio</span><strong id="tempoMedio">0 min</strong></div>
       </div>
       <h3 style="margin-top:32px">Relatórios</h3>
-      <div style="display:flex;gap:12px;margin-bottom:20px">
-        <button onclick="gerarRelatorioPDF()" style="flex:1;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;background:#d32f2f;color:#fff;box-shadow:0 8px 18px rgba(211,47,47,.22);transition:.2s">Baixar PDF</button>
-        <button onclick="gerarRelatorioExcel()" style="flex:1;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;background:#2e7d32;color:#fff;box-shadow:0 8px 18px rgba(46,125,50,.22);transition:.2s">Baixar Excel</button>
+      <div class="report-actions">
+        <button class="report-btn report-pdf" onclick="gerarRelatorioPDF()">Baixar PDF</button>
+        <button class="report-btn report-excel" onclick="gerarRelatorioExcel()">Baixar Excel</button>
+        <button class="report-btn report-sql" onclick="baixarBackupSQL()">Backup SQL</button>
       </div>
-      <h3>Status dos pedidos</h3>
-      <div id="statusPedidos"></div>
-      <h3>Roteirização por bairro</h3>
-      <div id="rotas"></div>
+      <div class="chart-grid">
+        <div class="card chart-card">
+          <span>Status dos pedidos</span>
+          <canvas id="graficoStatus" height="200"></canvas>
+        </div>
+        <div class="card chart-card">
+          <span>Entregas por bairro</span>
+          <canvas id="graficoBairros" height="200"></canvas>
+        </div>
+      </div>
+      <div class="dashboard-lists">
+        <div class="panel-list">
+          <h3>Produtos mais vendidos</h3>
+          <div id="rankingProdutos" class="metric-list"></div>
+        </div>
+        <div class="panel-list">
+          <h3>Alertas de estoque</h3>
+          <div id="listaEstoqueBaixo" class="metric-list"></div>
+        </div>
+        <div class="panel-list">
+          <h3>Cupons</h3>
+          <div id="rankingCupons" class="metric-list"></div>
+        </div>
+        <div class="panel-list">
+          <h3>Entregadores</h3>
+          <div id="rankingEntregadores" class="metric-list"></div>
+        </div>
+      </div>
     </section>
 
     <section id="clientes" class="tela">
@@ -69,13 +141,19 @@
       <form id="formCliente">
         <input id="clienteNome" placeholder="Nome" minlength="3" required>
         <input id="clienteTelefone" placeholder="Telefone" minlength="8" required>
-        <input id="clienteEndereco" placeholder="Endereço" minlength="3" required>
+        <input id="clienteEndereco" placeholder="Rua / avenida" minlength="3" required>
+        <input id="clienteNumeroCasa" placeholder="Número">
         <input id="clienteBairro" placeholder="Bairro" minlength="2" required>
         <input id="clienteReferencia" placeholder="Referência">
         <button>Cadastrar cliente</button>
       </form>
       <input class="filtro" id="filtroCliente" placeholder="Filtrar por nome, bairro, telefone..." oninput="filtrarClientes()">
-      <table><thead><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Endereço</th><th>Bairro</th><th>Referência</th><th>Ação</th></tr></thead><tbody id="listaClientes"></tbody></table>
+      <div class="bulk-toolbar">
+        <label><input id="bulkAll-clientes" type="checkbox" onchange="alternarSelecaoVisivelMassa('clientes', window.idsClientesVisiveis || [], this.checked)"> Selecionar visíveis</label>
+        <span id="bulkCount-clientes">Selecione 2 ou mais</span>
+        <button id="bulkDelete-clientes" class="bulk-delete" type="button" onclick="excluirClientesSelecionados()" disabled>Excluir selecionados</button>
+      </div>
+      <table><thead><tr><th class="bulk-col"></th><th>ID</th><th>Nome</th><th>Telefone</th><th>Rua</th><th>Número</th><th>Bairro</th><th>Referência</th><th>Ação</th></tr></thead><tbody id="listaClientes"></tbody></table>
     </section>
 
     <section id="entregadores" class="tela">
@@ -89,7 +167,12 @@
         <button>Cadastrar entregador</button>
       </form>
       <input class="filtro" id="filtroEntregador" placeholder="Filtrar por nome, veículo..." oninput="filtrarEntregadores()">
-      <table><thead><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Veículo</th><th>Código</th><th>Status</th><th>Ação</th></tr></thead><tbody id="listaEntregadores"></tbody></table>
+      <div class="bulk-toolbar">
+        <label><input id="bulkAll-entregadores" type="checkbox" onchange="alternarSelecaoVisivelMassa('entregadores', window.idsEntregadoresVisiveis || [], this.checked)"> Selecionar visíveis</label>
+        <span id="bulkCount-entregadores">Selecione 2 ou mais</span>
+        <button id="bulkDelete-entregadores" class="bulk-delete" type="button" onclick="excluirEntregadoresSelecionados()" disabled>Excluir selecionados</button>
+      </div>
+      <table><thead><tr><th class="bulk-col"></th><th>ID</th><th>Nome</th><th>Telefone</th><th>Veículo</th><th>Código</th><th>Status</th><th>Ação</th></tr></thead><tbody id="listaEntregadores"></tbody></table>
     </section>
 
     <section id="produtos" class="tela">
@@ -98,10 +181,24 @@
         <input id="produtoNome" placeholder="Nome do produto" minlength="2" required>
         <input id="produtoPreco" type="number" step="0.01" min="0.01" placeholder="Preço" required>
         <input id="produtoEstoque" type="number" min="0" placeholder="Estoque" required>
+        <input id="produtoEstoqueMinimo" type="number" min="0" placeholder="Estoque mínimo" value="5" required>
+        <select id="produtoAtivo"><option value="1">Ativo na loja</option><option value="0">Inativo</option></select>
         <button>Cadastrar produto</button>
       </form>
-      <input class="filtro" id="filtroProduto" placeholder="Filtrar por nome..." oninput="filtrarProdutos()">
-      <table><thead><tr><th>ID</th><th>Produto</th><th>Preço</th><th>Estoque</th><th>Ação</th></tr></thead><tbody id="listaProdutos"></tbody></table>
+      <div class="filter-row">
+        <input class="filtro" id="filtroProduto" placeholder="Filtrar por nome..." oninput="filtrarProdutos()">
+        <select id="filtroProdutoStatus" onchange="filtrarProdutos()">
+          <option value="todos">Todos os produtos</option>
+          <option value="ativos">Somente ativos</option>
+          <option value="inativos">Somente inativos</option>
+        </select>
+      </div>
+      <div class="bulk-toolbar">
+        <label><input id="bulkAll-produtos" type="checkbox" onchange="alternarSelecaoVisivelMassa('produtos', window.idsProdutosVisiveis || [], this.checked)"> Selecionar visíveis</label>
+        <span id="bulkCount-produtos">Selecione 2 ou mais</span>
+        <button id="bulkDelete-produtos" class="bulk-delete" type="button" onclick="excluirProdutosSelecionados()" disabled>Excluir selecionados</button>
+      </div>
+      <table><thead><tr><th class="bulk-col"></th><th>ID</th><th>Produto</th><th>Preço</th><th>Estoque</th><th>Mínimo</th><th>Status</th><th>Ação</th></tr></thead><tbody id="listaProdutos"></tbody></table>
     </section>
 
     <section id="pedidos" class="tela">
@@ -111,14 +208,76 @@
         <select id="pedidoEntregador"><option value="">Sem entregador</option></select>
         <select id="pedidoProduto" required></select>
         <input id="pedidoQuantidade" type="number" min="1" placeholder="Quantidade" required>
-        <select id="pedidoPagamento"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select>
-        <button>Criar pedido</button>
+        <select id="pedidoPagamento"><option>Pix</option></select>
+        <button>Criar pedido manual</button>
       </form>
       <input class="filtro" id="filtroPedido" placeholder="Filtrar por cliente, entregador, bairro, produto, status..." oninput="filtrarPedidos()">
-      <table><thead><tr><th>ID</th><th>Cliente</th><th>Entregador</th><th>Produto</th><th>Bairro</th><th>Status</th><th>Data</th><th>Ação</th></tr></thead><tbody id="listaPedidos"></tbody></table>
+      <div class="bulk-toolbar">
+        <label><input id="bulkAll-pedidos" type="checkbox" onchange="alternarSelecaoVisivelMassa('pedidos', window.idsPedidosVisiveis || [], this.checked)"> Selecionar visíveis</label>
+        <span id="bulkCount-pedidos">Selecione 2 ou mais</span>
+        <button id="bulkDelete-pedidos" class="bulk-delete" type="button" onclick="excluirPedidosSelecionados()" disabled>Excluir selecionados</button>
+        <button class="secondary-action" type="button" onclick="expirarPixPendentes()">Expirar Pix antigos</button>
+        <button class="secondary-action danger-soft" type="button" onclick="limparPedidosAntigos()">Limpar finalizados 30d</button>
+      </div>
+      <div id="listaPedidos" class="orders-list"></div>
+    </section>
+
+    <section id="suporte" class="tela">
+      <h2>Suporte</h2>
+      <div class="support-layout">
+        <div class="support-list">
+          <input class="filtro" id="filtroSuporte" placeholder="Filtrar por cliente, telefone ou pedido..." oninput="filtrarSuporte()">
+          <div id="listaSuporte" class="support-thread-list"></div>
+        </div>
+        <div class="support-chat">
+          <div id="suporteDetalhe" class="support-empty">Selecione uma conversa para responder.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="cupons" class="tela">
+      <h2>Cupons</h2>
+      <form id="formCupom">
+        <input id="cupomCodigo" placeholder="Código do cupom" minlength="2" required>
+        <input id="cupomPercentual" type="number" step="0.01" min="0.01" max="100" placeholder="Desconto %" required>
+        <input id="cupomValorMinimo" type="number" step="0.01" min="0" placeholder="Pedido mínimo R$">
+        <input id="cupomLimiteUsos" type="number" min="1" placeholder="Limite de usos">
+        <input id="cupomValidadeInicio" type="date" title="Data inicial do cupom">
+        <input id="cupomValidadeFim" type="date" title="Data final do cupom">
+        <select id="cupomAtivo"><option value="1">Ativo</option><option value="0">Inativo</option></select>
+        <button>Cadastrar cupom</button>
+      </form>
+      <input class="filtro" id="filtroCupom" placeholder="Filtrar por código..." oninput="filtrarCupons()">
+      <table><thead><tr><th>ID</th><th>Código</th><th>Desconto</th><th>Mínimo</th><th>Validade</th><th>Usos</th><th>Status</th><th>Ação</th></tr></thead><tbody id="listaCupons"></tbody></table>
+    </section>
+
+    <section id="configuracoes" class="tela">
+      <h2>Configurações</h2>
+      <form id="formConfiguracoes">
+        <input id="configNomeLoja" placeholder="Nome da loja" minlength="2" required>
+        <input id="configSubtituloLoja" placeholder="Subtítulo do cliente" minlength="2" required>
+        <input id="configPixChave" placeholder="Chave Pix">
+        <input id="configEstoqueMinimo" type="number" min="0" placeholder="Mínimo padrão para novos produtos" required>
+        <select id="configLojaAberta"><option value="1">Loja aberta</option><option value="0">Loja fechada</option></select>
+        <select id="configSomNovoPedido"><option value="1">Som ligado</option><option value="0">Som desligado</option></select>
+        <textarea id="configAvisoCliente" placeholder="Aviso exibido para o cliente" style="grid-column:1/-1;min-height:84px"></textarea>
+        <button>Salvar configurações</button>
+      </form>
+      <div class="empty-list">Essas configurações atualizam a página do cliente, abertura da loja, som do admin e os padrões operacionais.</div>
     </section>
   </main>
 
+  <div id="historicoModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="historicoTitulo">
+      <div class="modal-head">
+        <h3 id="historicoTitulo">Historico do pedido</h3>
+        <button type="button" onclick="fecharHistoricoPedido()" aria-label="Fechar historico">&times;</button>
+      </div>
+      <div id="historicoConteudo" class="history-list"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/utils.js"></script>
@@ -128,6 +287,9 @@
   <script src="js/entregadores.js"></script>
   <script src="js/produtos.js"></script>
   <script src="js/pedidos.js"></script>
+  <script src="js/suporte.js"></script>
+  <script src="js/cupons.js"></script>
+  <script src="js/configuracoes.js"></script>
   <script src="js/relatorio.js"></script>
   <script src="js/app.js"></script>
 </body>

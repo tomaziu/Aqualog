@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ÁquaLog - Pedido</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <style>
+    :root {
+      --blue: #0b5ea8;
+      --blue-dark: #084578;
+      --green: #14845f;
+      --amber: #e7a519;
+      --ink: #123040;
+      --muted: #667986;
+      --line: #d9e5ea;
+      --paper: #f4f8fa;
+      --white: #ffffff;
+      --danger: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: var(--paper);
+    }
+
+    .topbar {
+      min-height: 78px;
+      background: var(--white);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px clamp(16px, 4vw, 44px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      background: #fff;
+      border-radius: 8px;
+    }
+
+    .brand strong { display: block; font-size: 20px; color: var(--blue-dark); }
+    .brand span { color: var(--muted); font-size: 13px; }
+
+    .status-link {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--blue-dark);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 24px;
+      width: min(1180px, calc(100% - 32px));
+      margin: 24px auto;
+      align-items: start;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    h1, h2 { margin: 0; color: var(--blue-dark); }
+    h1 { font-size: clamp(24px, 4vw, 38px); letter-spacing: 0; }
+    h2 { font-size: 18px; }
+
+    .section-title p {
+      color: var(--muted);
+      margin: 6px 0 0;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .product {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 150px;
+      display: grid;
+      gap: 12px;
+      align-content: space-between;
+    }
+
+    .product strong { font-size: 17px; }
+    .meta { color: var(--muted); font-size: 13px; }
+    .price { color: var(--green); font-size: 24px; font-weight: 800; }
+
+    .product-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .product-actions input {
+      width: 68px;
+      flex: 0 0 68px;
+      text-align: center;
+      padding: 10px 8px;
+    }
+
+    .product button, .primary {
+      width: 100%;
+      border: 0;
+      border-radius: 6px;
+      background: var(--blue);
+      color: white;
+      padding: 12px 14px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .product button:hover, .primary:hover { background: var(--blue-dark); }
+    .product button:disabled, .primary:disabled {
+      background: #90a4ae;
+      cursor: not-allowed;
+      opacity: .85;
+    }
+
+    .panel {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      position: sticky;
+      top: 100px;
+    }
+
+    .selected {
+      background: #eef7fb;
+      border: 1px solid #c7e3ee;
+      border-radius: 6px;
+      padding: 12px;
+      margin: 12px 0;
+    }
+
+    .cart-empty {
+      color: var(--muted);
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .cart-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .cart-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #d7e7ee;
+      border-radius: 7px;
+    }
+
+    .cart-item strong,
+    .cart-item span {
+      display: block;
+    }
+
+    .cart-item span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .cart-controls {
+      display: grid;
+      grid-template-columns: 30px 38px 30px;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .cart-controls button {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      border-radius: 6px;
+      background: var(--blue);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .cart-controls input {
+      height: 30px;
+      padding: 4px;
+      text-align: center;
+    }
+
+    .cart-remove {
+      grid-column: 1 / -1;
+      width: 100%;
+      height: 28px;
+      border: none;
+      border-radius: 6px;
+      background: #fff5f5;
+      color: var(--danger);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin: 12px 0 6px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 11px 12px;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      background: #fff;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(11, 94, 168, .12);
+    }
+
+    .product-search {
+      margin: 0 0 16px;
+      max-width: 360px;
+      background: #fff;
+    }
+
+    .coupon-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 88px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .coupon-msg {
+      min-height: 20px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .coupon-msg.ok { color: #12613f; }
+    .coupon-msg.err { color: var(--danger); }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .panel-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .panel-tabs button {
+      position: relative;
+      border: 0;
+      border-radius: 8px;
+      min-height: 96px;
+      padding: 14px 10px;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+      transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+    }
+
+    .panel-tabs button:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+    .panel-tabs button.active {
+      box-shadow: 0 0 0 3px rgba(11, 94, 168, .18), 0 4px 12px rgba(0,0,0,.16);
+      transform: translateY(-1px);
+    }
+
+    .panel-tabs button .tab-icon {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .panel-tabs button .tab-label {
+      font-size: 14px;
+      line-height: 1.05;
+    }
+
+    .panel-tabs button .tab-hint {
+      min-height: 18px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.18);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .panel-tabs button .tab-arrow {
+      position: absolute;
+      right: 9px;
+      bottom: 7px;
+      opacity: .55;
+      font-size: 14px;
+    }
+
+    .tab-pedido { background: #1565c0; }
+    .tab-consulta { background: #e65100; }
+    .tab-conversa { background: #2e7d32; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      margin-top: 16px;
+      padding-top: 16px;
+      font-size: 16px;
+    }
+
+    .total strong { font-size: 24px; color: var(--green); }
+
+    .notice {
+      margin-top: 12px;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 14px;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .notice.ok { display: block; background: #e9f7ef; color: #12613f; border: 1px solid #bfe5cf; }
+    .notice.err { display: block; background: #fff0ed; color: var(--danger); border: 1px solid #ffd0c7; }
+
+    .client-notice {
+      display: none;
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border: 1px solid #bbdefb;
+      border-radius: 8px;
+      background: #eaf5ff;
+      color: #084578;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .client-notice.visible {
+      display: block;
+    }
+
+    .lookup {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .saved-orders {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .saved-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .saved-head button {
+      width: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 9px;
+      background: #fff;
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .saved-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .saved-order {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 6px;
+      padding: 10px;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .saved-order strong,
+    .saved-order span {
+      display: block;
+    }
+
+    .saved-order span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .pix-box {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid #bfe5cf;
+      border-radius: 6px;
+      background: #f0fbf5;
+    }
+
+    .pix-box img {
+      width: 170px;
+      height: 170px;
+      object-fit: contain;
+      justify-self: center;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 6px;
+    }
+
+    .pix-copy {
+      min-height: 72px;
+      resize: vertical;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .pix-copy-btn {
+      background: #0b7a57;
+    }
+
+    .pix-copy-btn:hover {
+      background: #066746;
+    }
+
+    .pix-copy-btn.copied {
+      background: #2e7d32;
+    }
+
+    .proof-upload {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px dashed #9fd0b4;
+      border-radius: 7px;
+      background: rgba(255,255,255,.62);
+    }
+
+    .proof-upload label {
+      margin: 0;
+    }
+
+    .pix-guidance,
+    .live-badge {
+      border-radius: 6px;
+      padding: 10px 11px;
+      background: #e3f2fd;
+      color: #0d47a1;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .pix-guidance span {
+      display: block;
+      margin-top: 3px;
+      color: #345466;
+      font-weight: 600;
+    }
+
+    .live-badge {
+      align-self: center;
+      white-space: nowrap;
+      background: #e8f5e9;
+      color: #1b5e20;
+    }
+
+    .delivery-code-card {
+      display: grid;
+      gap: 6px;
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid #81c784;
+      border-radius: 8px;
+      background: #e8f5e9;
+      color: #1b5e20;
+      text-align: center;
+    }
+
+    .delivery-code-card span {
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .delivery-code-card strong {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #fff;
+      color: #0d47a1;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: clamp(30px, 8vw, 46px);
+      letter-spacing: 4px;
+      line-height: 1;
+      border: 1px solid #bbdefb;
+    }
+
+    .delivery-code-card small {
+      color: #2e6a44;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .delivery-code-card.locked {
+      border-color: #ffe0b2;
+      background: #fff8e1;
+      color: #8a5b00;
+    }
+
+    .delivery-code-card.locked small {
+      color: #8a5b00;
+    }
+
+    .route-alert {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 8px;
+      border: 1px solid #ffcc80;
+      background: #fff3e0;
+      color: #8a4a00;
+    }
+
+    .route-alert strong,
+    .route-alert span {
+      display: block;
+    }
+
+    .route-alert strong {
+      font-size: 15px;
+    }
+
+    .route-alert span {
+      margin-top: 2px;
+      color: #6d4c1f;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .route-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e65100;
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .order-summary {
+      display: grid;
+      gap: 8px;
+    }
+
+    .order-summary strong {
+      color: #084578;
+      font-size: 16px;
+    }
+
+    .order-summary .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .order-summary .summary-item {
+      border-radius: 6px;
+      padding: 8px;
+      background: rgba(255,255,255,.62);
+      border: 1px solid rgba(191,229,207,.8);
+    }
+
+    .order-summary .summary-item span,
+    .order-summary .summary-line span {
+      display: block;
+      color: #47636f;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .order-summary .summary-item b,
+    .order-summary .summary-line b {
+      display: block;
+      margin-top: 2px;
+      font-size: 14px;
+      color: #123040;
+    }
+
+    .order-summary .summary-line {
+      border-radius: 6px;
+      padding: 8px;
+      background: rgba(255,255,255,.62);
+      border: 1px solid rgba(191,229,207,.8);
+    }
+
+    .order-progress {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 6px;
+      margin: 12px 0 2px;
+      padding: 10px;
+      border: 1px solid #d7e7ee;
+      border-radius: 8px;
+      background: #f8fcfd;
+    }
+
+    .progress-step {
+      display: grid;
+      gap: 5px;
+      justify-items: center;
+      position: relative;
+      min-width: 0;
+      color: #78909c;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .progress-step::before {
+      content: "";
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 2px solid #cfd8dc;
+      background: #fff;
+      box-shadow: inset 0 0 0 4px #fff;
+    }
+
+    .progress-step.done,
+    .progress-step.active {
+      color: #0d47a1;
+    }
+
+    .progress-step.done::before {
+      border-color: #2e7d32;
+      background: #2e7d32;
+      box-shadow: inset 0 0 0 5px #2e7d32;
+    }
+
+    .progress-step.active::before {
+      border-color: #1565c0;
+      background: #90caf9;
+    }
+
+    .progress-step.cancelled {
+      color: #b71c1c;
+    }
+
+    .progress-step.cancelled::before {
+      border-color: #d32f2f;
+      background: #ffcdd2;
+    }
+
+    .pix-only {
+      border-color: #bbdefb;
+      background: #e3f2fd;
+      color: #0d47a1;
+      font-weight: 800;
+    }
+
+    .chat-state {
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      color: var(--muted);
+      background: #fbfdfe;
+      margin-bottom: 12px;
+    }
+
+    .chat-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .chat-head {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #f8fbfd;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chat-head strong,
+    .chat-head span {
+      display: block;
+    }
+
+    .chat-head span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .chat-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e7f2fb;
+      color: var(--blue-dark);
+      font-weight: 900;
+    }
+
+    .support-messages-client {
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      min-height: 260px;
+      max-height: 330px;
+      overflow-y: auto;
+      margin: 0;
+      padding: 14px;
+      border: 0;
+      border-radius: 0;
+      background: #eef3f6;
+    }
+
+    .support-msg-client {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px 7px;
+      background: #fff;
+      font-size: 13px;
+      max-width: 86%;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+
+    .support-msg-client.admin {
+      background: #fff;
+      justify-self: start;
+    }
+
+    .support-msg-client.cliente {
+      background: #d9f2e4;
+      border-color: #b8dfc8;
+      justify-self: end;
+    }
+
+    .support-msg-client strong,
+    .support-msg-client small {
+      display: block;
+    }
+
+    .support-msg-client strong {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .support-msg-client p {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    .support-msg-client small {
+      margin-top: 5px;
+      color: #78909c;
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .chat-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 94px;
+      gap: 8px;
+      align-items: end;
+      padding: 12px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .chat-actions .primary {
+      width: 100%;
+      align-self: stretch;
+    }
+
+    .small-action {
+      width: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      background: #fff;
+      color: var(--blue-dark);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .panel { position: static; }
+    }
+
+    @media (max-width: 560px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .status-link { width: 100%; }
+      .row { grid-template-columns: 1fr; }
+      .order-summary .summary-grid { grid-template-columns: 1fr; }
+      .order-progress { grid-template-columns: 1fr; }
+      .progress-step { grid-template-columns: 22px minmax(0, 1fr); justify-items: start; text-align: left; }
+      .panel-tabs { grid-template-columns: 1fr; }
+      .panel-tabs button {
+        min-height: 70px;
+        display: grid;
+        grid-template-columns: 42px 1fr auto;
+        grid-template-areas: "icon label hint";
+        text-align: left;
+        justify-content: stretch;
+      }
+      .panel-tabs button .tab-icon { grid-area: icon; font-size: 28px; }
+      .panel-tabs button .tab-label { grid-area: label; justify-self: start; }
+      .panel-tabs button .tab-hint { grid-area: hint; justify-self: end; }
+      .panel-tabs button .tab-arrow { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img src="logo.png" alt="ÁquaLog">
+      <div>
+        <strong id="brandName">ÁquaLog</strong>
+        <span id="brandSubtitle">Pedido online da distribuidora</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section>
+      <div class="section-title">
+        <div>
+          <h1 id="clienteTitulo">Faça seu pedido</h1>
+          <p id="clienteSubtitulo">Monte seu carrinho, informe o endereço e pague tudo em um Pix só.</p>
+        </div>
+      </div>
+      <div id="avisoCliente" class="client-notice"></div>
+      <input id="buscaProduto" class="product-search" placeholder="Buscar produto..." oninput="renderProdutos()">
+      <div id="produtos" class="grid"></div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-tabs">
+        <button id="tabPedido" class="tab-pedido active" type="button" onclick="mostrarAbaCliente('pedido')">
+          <span class="tab-icon">&#128722;</span>
+          <span class="tab-label">Pedido</span>
+          <span class="tab-hint">Comprar</span>
+          <span class="tab-arrow">&#8594;</span>
+        </button>
+        <button id="tabConsulta" class="tab-consulta" type="button" onclick="mostrarAbaCliente('consulta')">
+          <span class="tab-icon">&#128269;</span>
+          <span class="tab-label">Acompanhar</span>
+          <span class="tab-hint">Status</span>
+          <span class="tab-arrow">&#8594;</span>
+        </button>
+        <button id="tabConversa" class="tab-conversa" type="button" onclick="mostrarAbaCliente('conversa')">
+          <span class="tab-icon">&#9993;</span>
+          <span class="tab-label">Conversa</span>
+          <span class="tab-hint">Suporte</span>
+          <span class="tab-arrow">&#8594;</span>
+        </button>
+      </div>
+
+      <section id="abaPedido" class="tab-content active">
+        <h2>Dados do pedido</h2>
+        <div id="selecionado" class="selected cart-empty">Adicione produtos ao carrinho para começar.</div>
+
+        <form id="formPedido">
+          <div class="row">
+            <div>
+              <label for="nome">Nome</label>
+              <input id="nome" required minlength="3" placeholder="Seu nome">
+            </div>
+            <div>
+              <label for="telefone">Telefone</label>
+              <input id="telefone" required minlength="8" placeholder="DDD + número">
+            </div>
+          </div>
+
+          <label for="email">E-mail para pagamento Pix</label>
+          <input id="email" type="email" placeholder="Opcional">
+
+          <div class="row">
+            <div>
+              <label for="endereco">Rua / avenida</label>
+              <input id="endereco" required minlength="3" placeholder="Rua, avenida, travessa">
+            </div>
+            <div>
+              <label for="numeroCasa">Número</label>
+              <input id="numeroCasa" placeholder="Ex: 120">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="bairro">Bairro</label>
+              <input id="bairro" required minlength="2" placeholder="Bairro">
+            </div>
+          </div>
+
+          <label for="referencia">Referência</label>
+          <input id="referencia" placeholder="Opcional">
+
+          <label for="pagamento">Pagamento</label>
+          <select id="pagamento" class="pix-only">
+            <option>Pix</option>
+          </select>
+
+          <label for="cupomCodigo">Cupom de desconto</label>
+          <div class="coupon-row">
+            <input id="cupomCodigo" placeholder="Ex: BEMVINDO10">
+            <button class="small-action" type="button" onclick="aplicarCupom()">Aplicar</button>
+          </div>
+          <div id="cupomMsg" class="coupon-msg"></div>
+
+          <div class="total">
+            <span>Total</span>
+            <strong id="total">R$ 0,00</strong>
+          </div>
+
+          <button id="btnConfirmarPedido" class="primary" type="submit" style="margin-top:16px">Confirmar pedido</button>
+          <div id="msg" class="notice"></div>
+        </form>
+      </section>
+
+      <section id="abaConsulta" class="tab-content">
+        <h2>Acompanhar</h2>
+        <label for="consultaId">Número do pedido</label>
+        <input id="consultaId" type="number" min="1" placeholder="Ex: 52">
+        <label for="consultaTelefone">Telefone usado no pedido</label>
+        <input id="consultaTelefone" placeholder="DDD + número">
+        <button class="primary" type="button" onclick="consultarPedido()" style="margin-top:12px">Ver status</button>
+        <div id="consultaMsg" class="notice"></div>
+
+        <div class="saved-orders">
+          <div class="saved-head">
+            <h2>Pedidos ativos</h2>
+            <button type="button" onclick="limparPedidosSalvos()">Limpar lista</button>
+          </div>
+          <div id="pedidosSalvos" class="saved-list"></div>
+        </div>
+      </section>
+
+      <section id="abaConversa" class="tab-content">
+        <h2>Conversa</h2>
+        <div id="chatVazio" class="chat-state">Abra um pedido em "Acompanhar" para conversar com o atendimento.</div>
+        <div id="suporteCliente" class="chat-card" style="display:none">
+          <div class="chat-head">
+            <div class="chat-avatar">A</div>
+            <div>
+              <strong id="suporteResumo">Conversa do pedido</strong>
+              <span id="suporteSubtitulo">Atendimento da distribuidora</span>
+            </div>
+            <span class="live-badge">Ao vivo</span>
+          </div>
+          <div id="mensagensCliente" class="support-messages-client"></div>
+          <div class="chat-actions">
+            <textarea id="mensagemCliente" placeholder="Escreva sua dúvida"></textarea>
+            <button class="primary" type="button" onclick="enviarMensagemCliente()">Enviar</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script>
+    var produtos = [];
+    var carrinho = [];
+    var pixChave = '';
+    var cupomAplicado = null;
+    var configCliente = {};
+    var elProdutos = document.getElementById('produtos');
+    var elSelecionado = document.getElementById('selecionado');
+    var elTotal = document.getElementById('total');
+    var elMsg = document.getElementById('msg');
+    var pedidoAtivo = null;
+    var eventosPedido = null;
+    var eventosPedidoChave = '';
+    var STORAGE_CLIENTE = 'aqualog_cliente';
+    var STORAGE_PEDIDOS = 'aqualog_pedidos';
+
+    function dinheiro(v) {
+      return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function confirmacaoTexto(status) {
+      var mapa = {
+        confirmado: 'Confirmado',
+        aguardando_confirmacao: 'Aguardando confirmação da loja',
+        aguardando_pagamento: 'Aguardando pagamento Pix'
+      };
+      return mapa[status] || status || 'Confirmado';
+    }
+
+    function formatarDataHora(valor) {
+      if (!valor) return '-';
+      var data = new Date(valor);
+      if (Number.isNaN(data.getTime())) return '-';
+      return data.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function mostrarAbaCliente(aba) {
+      ['pedido', 'consulta', 'conversa'].forEach(function(nome) {
+        var ativa = nome === aba;
+        document.getElementById('aba' + nome.charAt(0).toUpperCase() + nome.slice(1)).classList.toggle('active', ativa);
+        document.getElementById('tab' + nome.charAt(0).toUpperCase() + nome.slice(1)).classList.toggle('active', ativa);
+      });
+    }
+
+    function escapeHtml(v) {
+      return String(v ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function valor(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function limparTelefone(t) {
+      return String(t || '').replace(/\D/g, '');
+    }
+
+    function mostrarMsg(el, tipo, texto) {
+      el.className = 'notice ' + tipo;
+      el.textContent = texto;
+    }
+
+    function lerJson(chave, padrao) {
+      try {
+        return JSON.parse(localStorage.getItem(chave)) || padrao;
+      } catch (e) {
+        return padrao;
+      }
+    }
+
+    function salvarDadosCliente(payload) {
+      localStorage.setItem(STORAGE_CLIENTE, JSON.stringify({
+        nome: payload.nome,
+        telefone: payload.telefone,
+        email: payload.email || '',
+        endereco: payload.endereco,
+        numeroCasa: payload.numero_casa || '',
+        bairro: payload.bairro,
+        referencia: payload.referencia || ''
+      }));
+    }
+
+    function restaurarDadosCliente() {
+      var dados = lerJson(STORAGE_CLIENTE, null);
+      if (!dados) return;
+      ['nome', 'telefone', 'email', 'endereco', 'bairro', 'referencia'].forEach(function(id) {
+        if (dados[id] && document.getElementById(id)) document.getElementById(id).value = dados[id];
+      });
+      if (dados.numeroCasa && document.getElementById('numeroCasa')) document.getElementById('numeroCasa').value = dados.numeroCasa;
+    }
+
+    function pedidoFinalizado(status) {
+      return ['entregue', 'cancelado'].includes(String(status || '').toLowerCase());
+    }
+
+    function limparPedidosAntigos(pedidos) {
+      return (pedidos || []).filter(function(p) {
+        return !pedidoFinalizado(p.status);
+      }).slice(0, 8);
+    }
+
+    function salvarPedidoLocal(pedido, telefone) {
+      var pedidos = lerJson(STORAGE_PEDIDOS, []);
+      pedidos = pedidos.filter(function(p) { return p.id !== pedido.id; });
+      if (!pedidoFinalizado(pedido.status)) {
+        pedidos.unshift({
+          id: pedido.id,
+          telefone: telefone,
+          status: pedido.status,
+          pagamento_status: pedido.pagamento_status,
+          confirmacao_status: pedido.confirmacao_status,
+          codigo_entrega: pedido.codigo_entrega,
+          total: pedido.total,
+          produto: pedido.produto,
+          criado_em: pedido.data_criacao || new Date().toISOString()
+        });
+      }
+      localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(limparPedidosAntigos(pedidos)));
+      renderPedidosSalvos();
+    }
+
+    function renderPedidosSalvos() {
+      var box = document.getElementById('pedidosSalvos');
+      var pedidos = limparPedidosAntigos(lerJson(STORAGE_PEDIDOS, []));
+      localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidos));
+      if (!box) return;
+      if (!pedidos.length) {
+        box.innerHTML = '<div class="meta">Nenhum pedido ativo neste aparelho.</div>';
+        return;
+      }
+      box.innerHTML = pedidos.map(function(p) {
+        var codigoResumo = p.codigo_entrega ? p.codigo_entrega : 'bloqueado';
+        return '<button class="saved-order" type="button" onclick="abrirPedidoSalvo(' + p.id + ', \'' + p.telefone + '\')">' +
+          '<strong>Pedido #' + p.id + ' - ' + dinheiro(p.total) + '</strong>' +
+          '<span>' + escapeHtml(p.produto || 'Pedido') + ' | ' + formatarDataHora(p.criado_em) + ' | ' + escapeHtml(confirmacaoTexto(p.confirmacao_status)) + ' | Código: ' + escapeHtml(codigoResumo) + '</span>' +
+        '</button>';
+      }).join('');
+    }
+
+    function limparPedidosSalvos() {
+      localStorage.removeItem(STORAGE_PEDIDOS);
+      renderPedidosSalvos();
+    }
+
+    function abrirPedidoSalvo(id, telefone) {
+      document.getElementById('consultaId').value = id;
+      document.getElementById('consultaTelefone').value = telefone;
+      consultarPedido();
+    }
+
+    function ativarSuporte(id, telefone) {
+      pedidoAtivo = { id: id, telefone: telefone };
+      ativarEventosPedido(id, telefone);
+      document.getElementById('chatVazio').style.display = 'none';
+      document.getElementById('suporteCliente').style.display = 'block';
+      document.getElementById('suporteResumo').textContent = 'Pedido #' + id;
+      document.getElementById('suporteSubtitulo').textContent = 'Telefone: ' + telefone;
+      carregarMensagensCliente();
+      var campo = document.getElementById('mensagemCliente');
+      if (campo && !campo.dataset.enterReady) {
+        campo.dataset.enterReady = '1';
+        campo.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviarMensagemCliente();
+        });
+      }
+    }
+
+    function ativarEventosPedido(id, telefone) {
+      if (!window.EventSource) return;
+      var chave = id + ':' + telefone;
+      if (eventosPedido && eventosPedidoChave === chave) return;
+      if (eventosPedido) eventosPedido.close();
+      eventosPedidoChave = chave;
+      eventosPedido = new EventSource('/api/v1/site/pedidos/' + encodeURIComponent(id) + '/events?telefone=' + encodeURIComponent(telefone));
+      eventosPedido.onmessage = function(e) {
+        var msg;
+        try { msg = JSON.parse(e.data); } catch (err) { return; }
+        if (!msg || msg.type !== 'refresh') return;
+        var payload = msg.payload || {};
+        var pedidoId = payload.pedido_id || payload.id;
+        if (Number(pedidoId) !== Number(id)) return;
+
+        if (payload.acao === 'mensagem_suporte' || payload.acao === 'suporte_apagado') {
+          carregarMensagensCliente(true);
+          return;
+        }
+
+        if (['pagamento_atualizado', 'pedido_confirmado', 'status_admin', 'status_entregador'].includes(payload.acao)) {
+          consultarPedidoDireto(id, telefone, { viaEvento: true }).then(function(pedido) {
+            if (pedido && pedido.pagamento_status === 'pago') {
+              mostrarAbaCliente('consulta');
+            }
+          });
+        }
+      };
+    }
+
+    function renderPix(data) {
+      if (!data || (!data.pix_qrcode_base64 && !data.pix_copia_cola && !data.pix_ticket_url)) return '';
+      var html = '<div class="pix-box">';
+      html += '<strong>Pix Mercado Pago</strong>';
+      if (data.pix_qrcode_base64) {
+        html += '<img alt="QR Code Pix" src="data:image/png;base64,' + data.pix_qrcode_base64 + '">';
+      }
+      if (data.pix_copia_cola) {
+        html += '<textarea class="pix-copy" readonly>' + escapeHtml(data.pix_copia_cola) + '</textarea>';
+        html += '<button class="primary pix-copy-btn" type="button" onclick="copiarPix(this)">Copiar Pix</button>';
+      }
+      if (data.pix_ticket_url) {
+        html += '<a class="primary" style="text-align:center;text-decoration:none" href="' + escapeHtml(data.pix_ticket_url) + '" target="_blank" rel="noreferrer">Abrir Pix</a>';
+      }
+      if (data.id) {
+        html += '<div class="proof-upload">' +
+          '<label for="comprovantePix-' + data.id + '">Comprovante Pix</label>' +
+          '<input id="comprovantePix-' + data.id + '" type="file" accept="image/*,.pdf,.txt">' +
+          '<button class="small-action" type="button" onclick="enviarComprovantePix(' + data.id + ')">Enviar comprovante</button>' +
+        '</div>';
+      }
+      html += '<div class="pix-guidance"><strong>Aguardando pagamento</strong><span>Quando o Mercado Pago confirmar o Pix, a aba Acompanhar atualiza sozinha e libera o código de entrega.</span></div>';
+      html += '</div>';
+      return html;
+    }
+
+    function lerArquivoComoDataUrl(arquivo) {
+      return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(arquivo);
+      });
+    }
+
+    async function enviarComprovantePix(pedidoId) {
+      var input = document.getElementById('comprovantePix-' + pedidoId);
+      var telefone = limparTelefone(valor('consultaTelefone') || valor('telefone'));
+      if (!input || !input.files || !input.files.length) {
+        alert('Selecione o arquivo do comprovante.');
+        return;
+      }
+      if (!telefone) {
+        alert('Informe o telefone usado no pedido.');
+        return;
+      }
+      var arquivo = input.files[0];
+      if (arquivo.size > 180000) {
+        alert('Use uma imagem menor para o comprovante.');
+        return;
+      }
+      var conteudo = await lerArquivoComoDataUrl(arquivo);
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(pedidoId) + '/comprovante?telefone=' + encodeURIComponent(telefone), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ arquivo_nome: arquivo.name, conteudo: conteudo })
+      });
+      var json = await r.json().catch(function() { return {}; });
+      alert(r.ok && json.success !== false ? 'Comprovante enviado.' : (json.detail || 'Não foi possível enviar o comprovante.'));
+    }
+
+    async function copiarPix(botao) {
+      var box = botao.closest('.pix-box');
+      var campo = box ? box.querySelector('.pix-copy') : null;
+      var texto = campo ? campo.value : '';
+      if (!texto) return;
+
+      var copiado = false;
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(texto);
+          copiado = true;
+        } catch (e) {
+          copiado = false;
+        }
+      }
+
+      if (!copiado && campo) {
+        campo.focus();
+        campo.select();
+        campo.setSelectionRange(0, texto.length);
+        try {
+          copiado = document.execCommand('copy');
+        } catch (e) {
+          copiado = false;
+        }
+      }
+
+      var textoOriginal = botao.textContent;
+      botao.textContent = copiado ? 'Copiado!' : 'Copie manualmente';
+      botao.classList.toggle('copied', copiado);
+      setTimeout(function() {
+        botao.textContent = textoOriginal;
+        botao.classList.remove('copied');
+      }, 1800);
+    }
+
+    function renderCodigoPedido(data) {
+      if (!data) return '';
+      if (data.codigo_entrega) {
+        return '<div class="delivery-code-card">' +
+          '<span>Código de entrega liberado</span>' +
+          '<strong>' + escapeHtml(data.codigo_entrega) + '</strong>' +
+          '<small>Passe este código ao entregador somente quando receber o produto.</small>' +
+        '</div>';
+      }
+      if (data.confirmacao_status === 'aguardando_pagamento') {
+        return '<div class="delivery-code-card locked">' +
+          '<span>Código bloqueado</span>' +
+          '<small>Ele aparece aqui automaticamente depois que o Pix for aprovado.</small>' +
+        '</div>';
+      }
+      return '';
+    }
+
+    function statusCurto(status) {
+      var mapa = {
+        recebido: 'Recebido',
+        aguardando_entregador: 'Aguardando entregador',
+        separando: 'Separando',
+        em_preparo: 'Em preparo',
+        saiu_para_entrega: 'A caminho',
+        entregue: 'Entregue',
+        cancelado: 'Cancelado'
+      };
+      return mapa[status] || String(status || '-').replaceAll('_', ' ');
+    }
+
+    function etapaPedido(pedido) {
+      var status = String((pedido && pedido.status) || 'recebido').toLowerCase();
+      var pagamento = String((pedido && pedido.pagamento_status) || '').toLowerCase();
+      var confirmacao = String((pedido && pedido.confirmacao_status) || '').toLowerCase();
+      if (status === 'cancelado' || pagamento === 'expirado') return -1;
+      if (status === 'entregue') return 4;
+      if (status === 'saiu_para_entrega') return 3;
+      if (['aguardando_entregador', 'separando', 'em_preparo'].includes(status)) return 2;
+      if (pagamento === 'pago' || confirmacao === 'confirmado') return 2;
+      if (confirmacao === 'aguardando_pagamento' || pagamento === 'aguardando_pix') return 1;
+      return 0;
+    }
+
+    function renderProgressoPedido(pedido) {
+      var atual = etapaPedido(pedido || {});
+      var cancelado = atual < 0;
+      var etapas = ['Recebido', 'Pix', 'Preparo', 'Entrega', 'Entregue'];
+      return '<div class="order-progress" aria-label="Progresso do pedido">' + etapas.map(function(nome, idx) {
+        var classe = 'todo';
+        if (cancelado) {
+          classe = idx === 0 ? 'cancelled' : 'todo';
+        } else if (idx < atual) {
+          classe = 'done';
+        } else if (idx === atual) {
+          classe = 'active';
+        }
+        var texto = cancelado && idx === 0 ? 'Cancelado' : nome;
+        return '<div class="progress-step ' + classe + '"><span>' + texto + '</span></div>';
+      }).join('') + '</div>';
+    }
+
+    function pagamentoCurto(status) {
+      var mapa = {
+        pago: 'Pago',
+        aguardando_pix: 'Aguardando Pix',
+        recusado: 'Recusado',
+        expirado: 'Expirado'
+      };
+      return mapa[status] || String(status || 'Pix').replaceAll('_', ' ');
+    }
+
+    function renderAvisoRota(pedido) {
+      if (!pedido || pedido.status !== 'saiu_para_entrega') return '';
+      return '<div class="route-alert">' +
+        '<div class="route-icon">&#10146;</div>' +
+        '<div><strong>Entregador a caminho</strong><span>Seu pedido já saiu e está indo para o endereço informado.</span></div>' +
+      '</div>';
+    }
+
+    function renderResumoPedido(p) {
+      var endereco = [p.endereco, p.numero_casa, p.bairro].filter(Boolean).join(', ');
+      var resumoProdutos = p.produto || '-';
+      var descontoLinha = Number(p.desconto_valor || 0) > 0
+        ? '<div class="summary-item"><span>Cupom</span><b>' + escapeHtml(p.cupom_codigo || '-') + ' - ' + dinheiro(p.desconto_valor) + '</b></div>'
+        : '';
+      return '<div class="order-summary">' +
+        '<strong>Pedido #' + escapeHtml(p.id) + '</strong>' +
+        '<div class="summary-grid">' +
+          '<div class="summary-item"><span>Status</span><b>' + escapeHtml(statusCurto(p.status)) + '</b></div>' +
+          '<div class="summary-item"><span>Pagamento</span><b>' + escapeHtml(pagamentoCurto(p.pagamento_status)) + '</b></div>' +
+          '<div class="summary-item"><span>Produtos</span><b>' + escapeHtml(resumoProdutos) + '</b></div>' +
+          '<div class="summary-item"><span>Total</span><b>' + dinheiro(p.total) + '</b></div>' +
+          descontoLinha +
+        '</div>' +
+        '<div class="summary-line"><span>Endereço</span><b>' + escapeHtml(endereco || '-') + '</b></div>' +
+      '</div>';
+    }
+
+    function totalCarrinhoBruto() {
+      return carrinho.reduce(function(total, item) {
+        return total + Number(item.preco) * Number(item.quantidade);
+      }, 0);
+    }
+
+    function descontoCarrinho() {
+      if (!cupomAplicado) return 0;
+      return totalCarrinhoBruto() * Number(cupomAplicado.percentual || 0) / 100;
+    }
+
+    function totalCarrinho() {
+      return Math.max(0, totalCarrinhoBruto() - descontoCarrinho());
+    }
+
+    function atualizarTotal() {
+      elTotal.textContent = dinheiro(totalCarrinho());
+      var msg = document.getElementById('cupomMsg');
+      if (msg && cupomAplicado) {
+        msg.className = 'coupon-msg ok';
+        msg.textContent = cupomAplicado.codigo + ' aplicado: -' + dinheiro(descontoCarrinho());
+      }
+    }
+
+    function produtoPorId(id) {
+      return produtos.find(function(p) { return Number(p.id) === Number(id); });
+    }
+
+    function itemCarrinho(id) {
+      return carrinho.find(function(item) { return Number(item.produto_id) === Number(id); });
+    }
+
+    function resumoCarrinho() {
+      return carrinho.map(function(item) {
+        return item.nome + ' x' + item.quantidade;
+      }).join(', ');
+    }
+
+    function renderCarrinho() {
+      if (!carrinho.length) {
+        elSelecionado.className = 'selected cart-empty';
+        elSelecionado.innerHTML = 'Adicione produtos ao carrinho para começar.';
+        atualizarTotal();
+        return;
+      }
+      elSelecionado.className = 'selected';
+      elSelecionado.innerHTML = '<div class="cart-list">' + carrinho.map(function(item) {
+        return '<div class="cart-item">' +
+          '<div><strong>' + escapeHtml(item.nome) + '</strong><span>' + dinheiro(item.preco) + ' cada | Subtotal: ' + dinheiro(Number(item.preco) * Number(item.quantidade)) + '</span></div>' +
+          '<div class="cart-controls">' +
+            '<button type="button" onclick="alterarQuantidadeCarrinho(' + item.produto_id + ', ' + (item.quantidade - 1) + ')">-</button>' +
+            '<input type="number" min="1" max="' + item.estoque + '" value="' + item.quantidade + '" onchange="alterarQuantidadeCarrinho(' + item.produto_id + ', this.value)">' +
+            '<button type="button" onclick="alterarQuantidadeCarrinho(' + item.produto_id + ', ' + (item.quantidade + 1) + ')">+</button>' +
+            '<button class="cart-remove" type="button" onclick="removerDoCarrinho(' + item.produto_id + ')">Remover</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') + '</div>';
+      atualizarTotal();
+    }
+
+    function adicionarAoCarrinho(id) {
+      var produto = produtoPorId(id);
+      if (!produto) return;
+      var campoQtd = document.getElementById('qtdProduto-' + id);
+      var quantidade = Math.max(1, Number(campoQtd ? campoQtd.value : 1) || 1);
+      var existente = itemCarrinho(id);
+      var quantidadeAtual = existente ? existente.quantidade : 0;
+      var novaQuantidade = quantidadeAtual + quantidade;
+      if (novaQuantidade > produto.estoque) {
+        mostrarMsg(elMsg, 'err', 'Estoque insuficiente para ' + produto.nome + '. Disponível: ' + produto.estoque + '.');
+        return;
+      }
+      if (existente) {
+        existente.quantidade = novaQuantidade;
+        existente.preco = Number(produto.preco);
+        existente.estoque = Number(produto.estoque);
+      } else {
+        carrinho.push({
+          produto_id: produto.id,
+          nome: produto.nome,
+          preco: Number(produto.preco),
+          estoque: Number(produto.estoque),
+          quantidade: novaQuantidade
+        });
+      }
+      mostrarMsg(elMsg, '', '');
+      if (cupomAplicado) limparCupom('Reaplique o cupom depois de alterar o carrinho.', 'err');
+      renderCarrinho();
+    }
+
+    function alterarQuantidadeCarrinho(id, valor) {
+      var item = itemCarrinho(id);
+      if (!item) return;
+      var quantidade = Math.max(1, Number(valor) || 1);
+      if (quantidade > item.estoque) {
+        quantidade = item.estoque;
+        mostrarMsg(elMsg, 'err', 'Quantidade ajustada ao estoque disponível.');
+      }
+      item.quantidade = quantidade;
+      if (cupomAplicado) limparCupom('Reaplique o cupom depois de alterar o carrinho.', 'err');
+      renderCarrinho();
+    }
+
+    function removerDoCarrinho(id) {
+      carrinho = carrinho.filter(function(item) { return Number(item.produto_id) !== Number(id); });
+      if (!carrinho.length) {
+        limparCupom();
+      } else if (cupomAplicado) {
+        limparCupom('Reaplique o cupom depois de alterar o carrinho.', 'err');
+      }
+      renderCarrinho();
+    }
+
+    function sincronizarCarrinhoComProdutos() {
+      carrinho = carrinho.map(function(item) {
+        var produto = produtoPorId(item.produto_id);
+        if (!produto) return null;
+        item.nome = produto.nome;
+        item.preco = Number(produto.preco);
+        item.estoque = Number(produto.estoque);
+        item.quantidade = Math.min(item.quantidade, item.estoque);
+        return item.quantidade > 0 ? item : null;
+      }).filter(Boolean);
+      if (!carrinho.length && cupomAplicado) limparCupom();
+      renderCarrinho();
+    }
+
+    function renderProdutos() {
+      var q = (document.getElementById('buscaProduto').value || '').toLowerCase();
+      var filtrados = produtos.filter(function(p) {
+        return !q || String(p.nome || '').toLowerCase().includes(q);
+      });
+      if (!filtrados.length) {
+        elProdutos.innerHTML = '<div class="cart-empty">Nenhum produto encontrado.</div>';
+        sincronizarCarrinhoComProdutos();
+        return;
+      }
+      elProdutos.innerHTML = filtrados.map(function(p) {
+        return '<article class="product">' +
+          '<div><strong>' + escapeHtml(p.nome) + '</strong><div class="meta">Estoque: ' + p.estoque + '</div></div>' +
+          '<div class="price">' + dinheiro(p.preco) + '</div>' +
+          '<div class="product-actions">' +
+            '<input id="qtdProduto-' + p.id + '" type="number" min="1" max="' + p.estoque + '" value="1" aria-label="Quantidade de ' + escapeHtml(p.nome) + '">' +
+            '<button type="button" onclick="adicionarAoCarrinho(' + p.id + ')">Adicionar</button>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+      sincronizarCarrinhoComProdutos();
+    }
+
+    function limparCupom(mensagem, tipo) {
+      cupomAplicado = null;
+      var msg = document.getElementById('cupomMsg');
+      if (msg) {
+        msg.className = 'coupon-msg' + (tipo ? ' ' + tipo : '');
+        msg.textContent = mensagem || '';
+      }
+    }
+
+    async function aplicarCupom() {
+      var codigo = valor('cupomCodigo');
+      var msg = document.getElementById('cupomMsg');
+      if (!codigo) {
+        limparCupom();
+        atualizarTotal();
+        return;
+      }
+      if (!carrinho.length) {
+        msg.className = 'coupon-msg err';
+        msg.textContent = 'Adicione produtos antes de aplicar cupom.';
+        return;
+      }
+      var r = await fetch('/api/v1/site/cupons/' + encodeURIComponent(codigo) + '?total=' + encodeURIComponent(totalCarrinhoBruto()));
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        cupomAplicado = null;
+        msg.className = 'coupon-msg err';
+        msg.textContent = json.detail || 'Cupom inválido.';
+        atualizarTotal();
+        return;
+      }
+      cupomAplicado = json.data;
+      atualizarTotal();
+    }
+
+    function aplicarConfiguracoesCliente(config) {
+      config = config || {};
+      var nomeLoja = config.nome_loja || 'ÁquaLog';
+      var subtitulo = config.subtitulo_loja || 'Pedido online da distribuidora';
+      var aviso = (config.aviso_cliente || '').trim();
+      configCliente = config;
+      document.title = nomeLoja + ' - Pedido';
+      document.getElementById('brandName').textContent = nomeLoja;
+      document.getElementById('brandSubtitle').textContent = subtitulo;
+      document.getElementById('clienteTitulo').textContent = 'Faça seu pedido';
+      document.getElementById('clienteSubtitulo').textContent = 'Monte seu carrinho, informe o endereço e pague tudo em um Pix só.';
+      var avisoEl = document.getElementById('avisoCliente');
+      avisoEl.textContent = aviso;
+      avisoEl.classList.toggle('visible', !!aviso);
+      var botao = document.getElementById('btnConfirmarPedido');
+      if (botao && config.loja_aberta === false) {
+        botao.disabled = true;
+        botao.textContent = 'Loja fechada';
+      } else if (botao) {
+        botao.disabled = false;
+        botao.textContent = 'Confirmar pedido';
+      }
+    }
+
+    async function carregar() {
+      var cfg = await fetch('/api/v1/site/config').then(function(r) { return r.json(); }).catch(function() { return {}; });
+      aplicarConfiguracoesCliente(cfg.data || {});
+      pixChave = cfg.data && cfg.data.pix_chave ? cfg.data.pix_chave : '';
+      var r = await fetch('/api/v1/site/produtos');
+      var json = await r.json();
+      produtos = json.data || [];
+      renderProdutos();
+    }
+
+    var pedidoEmEnvio = false;
+    var ultimoPedidoGerado = null;
+
+    function chavePedido(payload) {
+      return [
+        payload.telefone,
+        String(payload.endereco || '').trim().toLowerCase(),
+        String(payload.numero_casa || '').trim().toLowerCase(),
+        String(payload.bairro || '').trim().toLowerCase(),
+        (payload.itens || []).map(function(item) { return item.produto_id + ':' + item.quantidade; }).join(','),
+        String(payload.cupom_codigo || '').trim().toLowerCase(),
+        String(payload.forma_pagamento || '').trim().toLowerCase()
+      ].join('|');
+    }
+
+    function exibirPedidoCriado(data, payload, jaEstavaNaTela) {
+      var texto = 'Pedido #' + data.id + ' recebido. Total: ' + dinheiro(data.total) + '. Status: Recebido.';
+      if (data.reutilizado || jaEstavaNaTela) {
+        texto = 'Esse Pix já foi gerado para o Pedido #' + data.id + '. Use o QR Code abaixo para concluir o pagamento.';
+      }
+      if (data.data_criacao) {
+        texto += '\nCriado em: ' + formatarDataHora(data.data_criacao);
+      }
+      texto += '\nConfirmação: ' + confirmacaoTexto(data.confirmacao_status);
+      if (data.confirmacao_status === 'aguardando_confirmacao') {
+        texto += '\nA loja vai confirmar seu pedido antes de enviar o entregador.';
+      }
+      if (data.confirmacao_status === 'aguardando_pagamento') {
+        texto += '\nDepois que o Pix for aprovado, o pedido é liberado para preparo e entrega.';
+      }
+      if (data.codigo_entrega) {
+        texto += '\nCódigo de entrega: ' + data.codigo_entrega + '\nPasse esse código ao entregador somente na hora de receber.';
+      }
+      if (payload.forma_pagamento === 'Pix' && !data.pix_copia_cola && pixChave) {
+        texto += '\n\nChave Pix: ' + pixChave + '\nEnvie o comprovante no atendimento ou apresente na entrega.';
+      }
+      mostrarMsg(elMsg, 'ok', texto);
+      elMsg.insertAdjacentHTML('beforeend', renderProgressoPedido(data));
+      elMsg.insertAdjacentHTML('beforeend', renderCodigoPedido(data));
+      if (payload.forma_pagamento === 'Pix') {
+        elMsg.insertAdjacentHTML('beforeend', renderPix(data));
+      }
+      document.getElementById('consultaId').value = data.id;
+      document.getElementById('consultaTelefone').value = payload.telefone;
+      salvarDadosCliente(payload);
+      salvarPedidoLocal(data, payload.telefone);
+      ativarSuporte(data.id, payload.telefone);
+      if (jaEstavaNaTela) {
+        var pixBox = elMsg.querySelector('.pix-box');
+        if (pixBox && typeof pixBox.scrollIntoView === 'function') {
+          pixBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    document.getElementById('formPedido').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!carrinho.length) {
+        mostrarMsg(elMsg, 'err', 'Adicione pelo menos um produto ao carrinho.');
+        return;
+      }
+      if (valor('cupomCodigo') && !cupomAplicado) {
+        await aplicarCupom();
+        if (!cupomAplicado) return;
+      }
+
+      var payload = {
+        nome: valor('nome'),
+        telefone: limparTelefone(valor('telefone')),
+        email: valor('email') || null,
+        endereco: valor('endereco'),
+        numero_casa: valor('numeroCasa') || null,
+        bairro: valor('bairro'),
+        referencia: valor('referencia') || null,
+        itens: carrinho.map(function(item) {
+          return { produto_id: item.produto_id, quantidade: item.quantidade };
+        }),
+        forma_pagamento: valor('pagamento'),
+        cupom_codigo: cupomAplicado ? cupomAplicado.codigo : (valor('cupomCodigo') || null)
+      };
+
+      var chaveAtual = chavePedido(payload);
+      if (ultimoPedidoGerado && ultimoPedidoGerado.chave === chaveAtual) {
+        exibirPedidoCriado(ultimoPedidoGerado.data, payload, true);
+        return;
+      }
+
+      if (pedidoEmEnvio) {
+        return;
+      }
+
+      var botao = document.getElementById('btnConfirmarPedido');
+      var textoBotao = botao ? botao.textContent : '';
+      pedidoEmEnvio = true;
+      if (botao) {
+        botao.disabled = true;
+        botao.textContent = 'Gerando Pix...';
+      }
+      try {
+        var r = await fetch('/api/v1/site/pedidos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var json = await r.json().catch(function() { return {}; });
+        if (!r.ok || json.success === false) {
+          mostrarMsg(elMsg, 'err', json.detail || json.error || 'Não foi possível criar o pedido.');
+          return;
+        }
+
+        var data = json.data;
+        ultimoPedidoGerado = { chave: chaveAtual, data: data };
+        exibirPedidoCriado(data, payload, false);
+        carrinho = [];
+        limparCupom();
+        renderCarrinho();
+        await carregar();
+      } finally {
+        pedidoEmEnvio = false;
+        if (botao) {
+          botao.disabled = false;
+          botao.textContent = textoBotao || 'Confirmar pedido';
+        }
+      }
+    });
+
+    function renderPedidoConsulta(p, tel, el) {
+      if (!p || !tel) {
+        return;
+      }
+      var texto = '';
+      if (p.pagamento_status === 'pago') {
+        texto += 'Pagamento concluído. Seu código de entrega está liberado abaixo.';
+      }
+      if (p.confirmacao_status === 'aguardando_confirmacao') {
+        texto += 'A loja ainda precisa confirmar antes de enviar o entregador.';
+      }
+      if (p.confirmacao_status === 'aguardando_pagamento') {
+        texto += 'A entrega só é liberada depois do Pix aprovado.';
+      }
+      mostrarMsg(el, 'ok', texto);
+      el.insertAdjacentHTML('afterbegin', renderResumoPedido(p));
+      el.insertAdjacentHTML('beforeend', renderProgressoPedido(p));
+      el.insertAdjacentHTML('beforeend', renderAvisoRota(p));
+      el.insertAdjacentHTML('beforeend', renderCodigoPedido(p));
+      if (p.forma_pagamento === 'Pix' && p.pagamento_status !== 'pago') {
+        el.insertAdjacentHTML('beforeend', renderPix(p));
+      }
+      salvarPedidoLocal(p, tel);
+      ativarSuporte(p.id, tel);
+    }
+
+    async function consultarPedidoDireto(id, tel, opcoes) {
+      var el = document.getElementById('consultaMsg');
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(id) + '?telefone=' + encodeURIComponent(tel));
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        if (!opcoes || !opcoes.viaEvento) {
+          mostrarMsg(el, 'err', json.detail || 'Pedido não encontrado.');
+        }
+        return null;
+      }
+      var p = json.data;
+      renderPedidoConsulta(p, tel, el);
+      return p;
+    }
+
+    async function consultarPedido() {
+      var id = valor('consultaId');
+      var tel = limparTelefone(valor('consultaTelefone'));
+      var el = document.getElementById('consultaMsg');
+      if (!id || !tel) {
+        mostrarMsg(el, 'err', 'Informe número do pedido e telefone.');
+        return;
+      }
+      await consultarPedidoDireto(id, tel);
+    }
+
+    async function atualizarPagamentoCliente() {
+      if (!pedidoAtivo) return;
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(pedidoAtivo.id) + '/pagamento/atualizar?telefone=' + encodeURIComponent(pedidoAtivo.telefone), { method: 'POST' });
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        mostrarMsg(document.getElementById('consultaMsg'), 'err', json.detail || 'Não foi possível atualizar o pagamento.');
+        return;
+      }
+      consultarPedido();
+    }
+
+    async function carregarMensagensCliente(silencioso) {
+      if (!pedidoAtivo) return;
+      var box = document.getElementById('mensagensCliente');
+      if (!silencioso) box.innerHTML = '<div class="meta">Carregando...</div>';
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(pedidoAtivo.id) + '/suporte?telefone=' + encodeURIComponent(pedidoAtivo.telefone));
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        box.innerHTML = '<div class="meta">Não foi possível carregar a conversa.</div>';
+        return;
+      }
+      var mensagens = json.data || [];
+      if (!mensagens.length) {
+        box.innerHTML = '<div class="meta">Nenhuma mensagem ainda.</div>';
+        return;
+      }
+      box.innerHTML = mensagens.map(function(m) {
+        var autor = m.autor === 'admin' ? 'Atendimento' : 'Você';
+        return '<div class="support-msg-client ' + m.autor + '">' +
+          '<strong>' + autor + '</strong>' +
+          '<p>' + escapeHtml(m.mensagem) + '</p>' +
+          '<small>' + formatarDataHora(m.criado_em) + '</small>' +
+        '</div>';
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function enviarMensagemCliente() {
+      if (!pedidoAtivo) return;
+      var input = document.getElementById('mensagemCliente');
+      var mensagem = input.value.trim();
+      if (!mensagem) return;
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(pedidoAtivo.id) + '/suporte?telefone=' + encodeURIComponent(pedidoAtivo.telefone), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mensagem: mensagem })
+      });
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        alert(json.detail || 'Não foi possível enviar a mensagem.');
+        return;
+      }
+      input.value = '';
+      carregarMensagensCliente(true);
+    }
+
+    restaurarDadosCliente();
+    renderPedidosSalvos();
+    carregar();
+  </script>
+</body>
+</html>

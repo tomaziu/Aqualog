@@ -4,25 +4,50 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ÁquaLog - Entregador</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="stylesheet" href="style.css">
   <style>
     body { background: #f0f2f5; display: block; padding: 0; }
     #tela-login { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-    #tela-login h1 { font-size: 1.6rem; color: #1a73e8; margin-bottom: 8px; }
-    #tela-login p { color: #666; margin-bottom: 24px; }
-    #tela-login input { width: 100%; max-width: 280px; padding: 14px; font-size: 1.1rem; text-align: center; border: 2px solid #ddd; border-radius: 10px; margin-bottom: 16px; outline: none; }
-    #tela-login input:focus { border-color: #1a73e8; }
-    #tela-login button { width: 100%; max-width: 280px; padding: 14px; font-size: 1.1rem; background: #1a73e8; color: #fff; border: none; border-radius: 10px; cursor: pointer; }
+    #tela-login img { display: block; margin: 0 auto 4px; width: 260px; }
+    #tela-login p { color: #616161; margin-bottom: 20px; }
+    #tela-login input { width: 100%; max-width: 260px; padding: 12px; font-size: 1rem; text-align: center; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 14px; outline: none; }
+    #tela-login input:focus { border-color: #1565c0; box-shadow: 0 0 0 2px rgba(21,101,192,.12); }
+    #tela-login button { width: 100%; max-width: 260px; padding: 12px; font-size: 1rem; background: #1565c0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
     #tela-login .erro { color: #d32f2f; margin-top: 12px; font-size: 0.9rem; }
+
+    #tela-menu { display: none; padding: 20px; max-width: 500px; margin: 0 auto; }
+    #tela-menu .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    #tela-menu .topo h1 { font-size: 1.5rem; color: #1565c0; margin: 0; }
+    #tela-menu .topo button { background: #c62828; border: none; color: #fff; font-size: .9rem; cursor: pointer; padding: 8px 14px; border-radius: 4px; font-weight: 700; }
+    #info-entregador { font-size: 0.9rem; color: #555; margin-top: 4px; }
+    #rodape-menu { margin-top: 24px; padding: 16px; background: #fff; border-radius: 4px; text-align: center; font-size: .85rem; color: #555; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    #rodape-menu .linha { margin: 4px 0; }
+    #rodape-menu .relogio { font-size: 1.8rem; font-weight: 700; color: #1565c0; }
+    .menu-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .menu-botoes button {
+      padding: 20px 14px; font-size: 1.1rem; font-weight: 600;
+      border: none; border-radius: 4px; cursor: pointer; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 10px; transition: .15s ease;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+      position: relative;
+    }
+    .menu-botoes button:hover { filter: brightness(1.06); }
+    .menu-botoes button .simbolo { font-size: 2.4rem; line-height: 1; }
+    .menu-botoes button .qtd { background: rgba(255,255,255,.15); padding: 6px 16px; border-radius: 4px; font-size: 1.5rem; font-weight: 700; }
+    .menu-botoes button .seta { position: absolute; bottom: 8px; right: 10px; font-size: 1rem; opacity: .5; }
+    .btn-todos { background: #1565c0; color: #fff; }
+    .btn-rota { background: #e65100; color: #fff; }
+    .btn-preparo { background: #f57f17; color: #fff; }
+    .btn-entregues { background: #2e7d32; color: #fff; }
 
     #tela-pedidos { display: none; padding: 16px; max-width: 500px; margin: 0 auto; }
     #tela-pedidos .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    #tela-pedidos .topo h1 { font-size: 1.3rem; color: #1a73e8; }
-    #tela-pedidos .topo button { background: none; border: none; color: #d32f2f; font-size: 0.9rem; cursor: pointer; padding: 8px; }
-    .filtros { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
-    .filtros button { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
-    .filtros button.ativo { background: #1a73e8; color: #fff; border-color: #1a73e8; }
-
+    #tela-pedidos .topo h1 { font-size: 1.2rem; color: #1a73e8; }
+    #tela-pedidos .topo button { background: none; border: none; color: #1a73e8; font-size: 0.9rem; cursor: pointer; padding: 8px; font-weight: 600; }
     .pedido-card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
     .pedido-card .topo-card { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
     .pedido-card .topo-card strong { color: #1a73e8; }
@@ -35,42 +60,74 @@
     .pedido-card .endereco { font-size: 0.9rem; color: #333; margin: 4px 0; }
     .pedido-card .info { font-size: 0.85rem; color: #666; margin: 2px 0; }
     .pedido-card .acoes-card { display: flex; gap: 8px; margin-top: 12px; }
-    .pedido-card .acoes-card button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500; }
+    .pedido-card .acoes-card button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-weight: 600; }
     .btn-sair { background: #1a73e8; color: #fff; }
     .btn-entregue { background: #2e7d32; color: #fff; }
     .btn-voltar { background: #e0e0e0; color: #333; }
     .vazio { text-align: center; color: #999; padding: 40px 0; }
-    #info-entregador { font-size: 0.85rem; color: #555; }
   </style>
 </head>
 <body>
   <div id="tela-login">
-    <h1>ÁquaLog</h1>
+    <img src="logo.png" alt="ÁquaLog">
     <p>Entregador - Acesse seus pedidos</p>
     <input id="input-codigo" type="text" placeholder="Digite seu código" maxlength="20" autocomplete="off">
     <button onclick="fazerLogin()">Entrar</button>
     <div id="erro-login" class="erro"></div>
   </div>
 
-  <div id="tela-pedidos">
+  <div id="tela-menu">
     <div class="topo">
       <div>
-        <h1>ÁquaLog</h1>
+        <img src="logo.png" alt="ÁquaLog" style="width:80px;display:block">
         <div id="info-entregador"></div>
       </div>
       <button onclick="sair()">Sair</button>
     </div>
-
-    <div class="filtros">
-      <button class="ativo" data-filtro="todos" onclick="filtrar('todos')">Todos</button>
-      <button data-filtro="saiu_para_entrega" onclick="filtrar('saiu_para_entrega')">Em rota</button>
-      <button data-filtro="em_preparo" onclick="filtrar('em_preparo')">Preparando</button>
-      <button data-filtro="entregue" onclick="filtrar('entregue')">Entregues</button>
+    <div class="menu-botoes">
+      <button class="btn-todos" onclick="abrirPedidos('todos')">
+        <span class="simbolo">&#9776;</span>
+        <span>Todos</span>
+        <span class="qtd" id="qtd-todos">0</span>
+        <span class="seta">&#8594;</span>
+      </button>
+      <button class="btn-rota" onclick="abrirPedidos('saiu_para_entrega')">
+        <span class="simbolo">&#10146;</span>
+        <span>Em rota</span>
+        <span class="qtd" id="qtd-rota">0</span>
+        <span class="seta">&#8594;</span>
+      </button>
+      <button class="btn-preparo" onclick="abrirPedidos('em_preparo')">
+        <span class="simbolo">&#9881;</span>
+        <span>Preparando</span>
+        <span class="qtd" id="qtd-preparo">0</span>
+        <span class="seta">&#8594;</span>
+      </button>
+      <button class="btn-entregues" onclick="abrirPedidos('entregue')">
+        <span class="simbolo">&#10003;</span>
+        <span>Entregues</span>
+        <span class="qtd" id="qtd-entregues">0</span>
+        <span class="seta">&#8594;</span>
+      </button>
     </div>
+    <div id="rodape-menu">
+      <div class="linha" id="msg-boas-vindas"></div>
+      <div class="linha relogio" id="relogio"></div>
+      <div class="linha" id="msg-ultimo-pedido"></div>
+      <div class="linha" style="color:#999;margin-top:6px">Toque em uma opção para ver os pedidos</div>
+    </div>
+  </div>
 
+  <div id="tela-pedidos">
+    <div class="topo">
+      <button onclick="voltarMenu()">← Voltar</button>
+      <h1 id="titulo-pedidos">Pedidos</h1>
+      <button onclick="carregarPedidos()" style="background: none; border: none; color: #1a73e8; cursor: pointer; font-size: 1.2rem;" title="Atualizar">🔄</button>
+    </div>
     <div id="lista-pedidos"></div>
   </div>
 
+  <script src="js/utils.js"></script>
   <script src="entregador.js"></script>
 </body>
 </html>
