@@ -2,7 +2,6 @@ var clienteEntregaAtual = null;
 var clienteWs = null;
 var clienteMap = null;
 var clienteMarkers = {};
-var clienteRoute = null;
 var clienteGpsWatchId = null;
 var clienteGpsIntervalo = null;
 var clienteGpsCompartilhando = false;
@@ -95,21 +94,10 @@ function clienteIconeCliente() {
   });
 }
 
-function clienteIconeDestino() {
-  return L.divIcon({
-    className: 'tracking-marker-wrap',
-    html: '<div class="tracking-marker tracking-marker-destino"></div>',
-    iconSize: [26, 26],
-    iconAnchor: [13, 13]
-  });
-}
-
 function atualizarMarcadorCliente(nome, latLng, label) {
   var icon;
   if (nome === 'entregador') icon = clienteIconeEntregador();
-  else if (nome === 'cliente') icon = clienteIconeCliente();
-  else if (nome === 'destino') icon = clienteIconeDestino();
-  else icon = clienteIconeDestino();
+  else icon = clienteIconeCliente();
 
   if (!clienteMarkers[nome]) {
     clienteMarkers[nome] = L.marker(latLng, { icon: icon, title: label }).addTo(clienteMap);
@@ -120,55 +108,37 @@ function atualizarMarcadorCliente(nome, latLng, label) {
   }
 }
 
-async function desenharRotaCliente(lat1, lng1, lat2, lng2) {
-  if (clienteRoute) {
-    clienteMap.removeLayer(clienteRoute);
-    clienteRoute = null;
-  }
-  try {
-    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + lng1 + ',' + lat1 + ';' + lng2 + ',' + lat2 + '?overview=full&geometries=geojson');
-    var json = await r.json();
-    if (json.code === 'Ok' && json.routes && json.routes[0]) {
-      var rota = json.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
-      clienteRoute = L.polyline(rota, { color: '#06b6d4', weight: 5, opacity: .9 }).addTo(clienteMap);
-      return;
-    }
-  } catch (err) {}
-  clienteRoute = L.polyline([[lat1, lng1], [lat2, lng2]], { color: '#06b6d4', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(clienteMap);
-}
-
 function desenharMapaCliente(e) {
-  carregarLeafletCliente(async function() {
+  carregarLeafletCliente(function() {
     var el = $('clienteTrackingMap');
     if (!clienteMap) {
       el.innerHTML = '';
-      clienteMap = L.map('clienteTrackingMap').setView([Number(e.destino_latitude), Number(e.destino_longitude)], 13);
+      clienteMap = L.map('clienteTrackingMap').setView([-3.5, -43.5], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap'
       }).addTo(clienteMap);
+      setTimeout(function() { clienteMap.invalidateSize(); }, 200);
     }
 
-    atualizarMarcadorCliente('destino', [Number(e.destino_latitude), Number(e.destino_longitude)], 'Destino');
+    var pontos = [];
 
-    if (e.entregador_latitude) {
-      atualizarMarcadorCliente('entregador', [Number(e.entregador_latitude), Number(e.entregador_longitude)], 'Entregador');
+    if (e.entregador_latitude && e.entregador_longitude) {
+      var latE = Number(e.entregador_latitude);
+      var lngE = Number(e.entregador_longitude);
+      atualizarMarcadorCliente('entregador', [latE, lngE], 'Entregador');
+      pontos.push([latE, lngE]);
     }
 
-    if (e.cliente_atual_latitude) {
-      atualizarMarcadorCliente('cliente', [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)], 'Você');
+    if (e.cliente_atual_latitude && e.cliente_atual_longitude) {
+      var latC = Number(e.cliente_atual_latitude);
+      var lngC = Number(e.cliente_atual_longitude);
+      atualizarMarcadorCliente('cliente', [latC, lngC], 'Você');
+      pontos.push([latC, lngC]);
     }
 
-    var latE = e.entregador_latitude ? Number(e.entregador_latitude) : null;
-    var lngE = e.entregador_longitude ? Number(e.entregador_longitude) : null;
-    var latC = e.cliente_atual_latitude ? Number(e.cliente_atual_latitude) : Number(e.destino_latitude);
-    var lngC = e.cliente_atual_latitude ? Number(e.cliente_atual_longitude) : Number(e.destino_longitude);
-
-    if (latE && lngE) {
-      await desenharRotaCliente(latE, lngE, latC, lngC);
-      clienteMap.fitBounds(L.latLngBounds([[latE, lngE], [latC, lngC]]), { padding: [44, 44], maxZoom: 15 });
-    } else {
-      clienteMap.setView([latC, lngC], 15);
+    if (pontos.length) {
+      clienteMap.fitBounds(L.latLngBounds(pontos), { padding: [50, 50], maxZoom: 15 });
     }
   });
 }
