@@ -1,0 +1,2701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AquaLog - Pedido</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
+  <style>
+    :root {
+      --blue: #06b6d4;
+      --blue-dark: #0891b2;
+      --green: #10b981;
+      --amber: #fbbf24;
+      --ink: #e2e8f0;
+      --muted: #94a3b8;
+      --line: rgba(148, 163, 184, 0.12);
+      --paper: #0a0e1a;
+      --white: rgba(15, 23, 42, 0.6);
+      --danger: #f87171;
+      --sombra: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Outfit", "Inter", "Segoe UI", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 88% 4%, rgba(6, 182, 212, 0.08), transparent 32vw),
+        linear-gradient(180deg, #0a0e1a 0, #0f172a 420px),
+        var(--paper);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.8), transparent 72%);
+    }
+
+    .topbar {
+      min-height: 86px;
+      background: rgba(15, 23, 42, 0.7);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px clamp(16px, 4vw, 44px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 4px;
+    }
+
+    .brand strong { display: block; font-size: 20px; color: #f1f5f9; }
+    .brand span { color: var(--muted); font-size: 13px; }
+
+    .status-link {
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      background: rgba(6, 182, 212, 0.08);
+      color: #06b6d4;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 390px);
+      gap: 26px;
+      width: min(1220px, calc(100% - 32px));
+      margin: 28px auto;
+      align-items: start;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      padding: clamp(22px, 4vw, 34px);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(12px);
+    }
+
+    h1, h2 { margin: 0; color: #f1f5f9; }
+    h1 { font-size: clamp(32px, 5vw, 58px); letter-spacing: 0; line-height: .98; }
+    h2 { font-size: 18px; color: #cbd5e1; }
+
+    .section-title p {
+      color: var(--muted);
+      margin: 6px 0 0;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .client-home {
+      display: grid;
+      gap: 14px;
+    }
+
+    .client-home.hidden,
+    .product-area.hidden {
+      display: none;
+    }
+
+    .client-action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .client-action-card {
+      min-height: 130px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.5);
+      color: var(--ink);
+      padding: 18px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: var(--sombra);
+      position: relative;
+      overflow: hidden;
+      transition: .18s ease;
+    }
+
+    .client-action-card::after {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: linear-gradient(180deg, #06b6d4, #8b5cf6);
+    }
+
+    .client-action-card:hover {
+      border-color: rgba(6, 182, 212, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .client-action-card.active {
+      border-color: rgba(6, 182, 212, 0.4);
+      box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.15), 0 12px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .client-action-card .icon {
+      display: inline-flex;
+      width: 42px;
+      height: 42px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 10px;
+      background: rgba(6, 182, 212, 0.1);
+      color: #06b6d4;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+
+    .client-action-card strong,
+    .client-action-card span {
+      display: block;
+    }
+
+    .client-action-card span {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+
+    .client-quick-status {
+      border: 1px solid rgba(6, 182, 212, 0.15);
+      border-radius: 12px;
+      background: rgba(6, 182, 212, 0.06);
+      padding: 14px 16px;
+      color: #67e8f9;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .product-area {
+      display: block;
+    }
+
+    .product-area-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .back-home {
+      width: auto;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      background: rgba(6, 182, 212, 0.08);
+      color: #06b6d4;
+      border-radius: 999px;
+      padding: 9px 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .product {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 10px;
+      padding: 16px;
+      min-height: 150px;
+      display: grid;
+      gap: 12px;
+      align-content: space-between;
+      transition: .18s ease;
+    }
+
+    .product:hover {
+      border-color: rgba(6, 182, 212, 0.2);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .product strong { font-size: 17px; }
+    .meta { color: var(--muted); font-size: 13px; }
+    .price { color: var(--green); font-size: 24px; font-weight: 800; }
+
+    .product-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .product-actions input {
+      width: 68px;
+      flex: 0 0 68px;
+      text-align: center;
+      padding: 10px 8px;
+    }
+
+    .product button, .primary {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: white;
+      padding: 12px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.25);
+    }
+
+    .product button:hover, .primary:hover {
+      background: linear-gradient(135deg, #22d3ee, #06b6d4);
+      box-shadow: 0 6px 24px rgba(6, 182, 212, 0.35);
+    }
+    .product button:disabled, .primary:disabled {
+      background: #334155;
+      cursor: not-allowed;
+      opacity: .6;
+      box-shadow: none;
+    }
+
+    .panel {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 10px;
+      padding: 18px;
+      position: sticky;
+      top: 110px;
+      backdrop-filter: blur(12px);
+    }
+
+    .selected {
+      background: rgba(6, 182, 212, 0.06);
+      border: 1px solid rgba(6, 182, 212, 0.15);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+    }
+
+    .cart-empty {
+      color: #64748b;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .cart-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .cart-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 8px;
+    }
+
+    .cart-item strong,
+    .cart-item span {
+      display: block;
+    }
+
+    .cart-item span {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .cart-controls {
+      display: grid;
+      grid-template-columns: 30px 38px 30px;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .cart-controls button {
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .cart-controls input {
+      height: 30px;
+      padding: 4px;
+      text-align: center;
+    }
+
+    .cart-remove {
+      width: 100%;
+      height: 30px;
+      border: none;
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 12px;
+      padding: 0 10px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #94a3b8;
+      margin: 12px 0 6px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      background: rgba(15, 23, 42, 0.7);
+      font-family: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #06b6d4;
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+    }
+
+    .product-search {
+      margin: 0 0 16px;
+      max-width: 360px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .product-search::placeholder {
+      color: #64748b;
+    }
+
+    .product-search:focus {
+      border-color: #06b6d4;
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+    }
+
+    .coupon-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 88px;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .coupon-msg {
+      min-height: 20px;
+      margin-top: 7px;
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .coupon-msg.ok { color: #34d399; }
+    .coupon-msg.err { color: var(--danger); }
+
+    .address-suggest-client { position: relative; }
+    .address-suggest-client input { width: 100%; }
+    .address-suggest-client .options {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      z-index: 60;
+      display: none;
+      max-height: 240px;
+      overflow: auto;
+      background: #131d2e;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 12px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+      padding: 6px;
+    }
+
+    .geo-permission-notice {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 0 0 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(6, 182, 212, 0.15);
+      border-radius: 12px;
+      background: rgba(6, 182, 212, 0.06);
+      color: #67e8f9;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .geo-permission-notice.hidden {
+      display: none;
+    }
+
+    .geo-permission-notice strong,
+    .geo-permission-notice span {
+      display: block;
+    }
+
+    .geo-permission-notice span {
+      margin-top: 2px;
+      color: #67e8f9;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .geo-permission-notice button {
+      width: auto;
+      white-space: nowrap;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+    }
+
+    .address-suggest-client .options.ativo { display: block; }
+
+    .address-loading {
+      padding: 12px;
+      color: #64748b;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .address-suggest-client button {
+      display: block;
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      text-align: left;
+      padding: 10px 12px;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .address-suggest-client button:hover { background: rgba(6, 182, 212, 0.1); }
+    .address-suggest-client strong,
+    .address-suggest-client span { display: block; }
+    .address-suggest-client span,
+    .address-suggest-client .empty { color: var(--muted); font-size: .84rem; margin-top: 2px; }
+    .address-suggest-client .empty { padding: 12px; }
+
+    textarea {
+      min-height: 88px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    .panel-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .panel-tabs-hidden {
+      display: none;
+    }
+
+    .panel-tabs button {
+      position: relative;
+      border: 0;
+      border-radius: 8px;
+      min-height: 96px;
+      padding: 14px 10px;
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+      transition: transform .15s ease, filter .15s ease, box-shadow .15s ease;
+    }
+
+    .panel-tabs button:hover { filter: brightness(1.06); transform: translateY(-1px); }
+
+    .panel-tabs button.active {
+      box-shadow: 0 0 0 3px rgba(11, 94, 168, .18), 0 4px 12px rgba(0,0,0,.16);
+      transform: translateY(-1px);
+    }
+
+    .panel-tabs button .tab-icon {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .panel-tabs button .tab-label {
+      font-size: 14px;
+      line-height: 1.05;
+    }
+
+    .panel-tabs button .tab-hint {
+      min-height: 18px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.18);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .panel-tabs button .tab-arrow {
+      position: absolute;
+      right: 9px;
+      bottom: 7px;
+      opacity: .55;
+      font-size: 14px;
+    }
+
+    .tab-pedido { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+    .tab-consulta { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .tab-conversa { background: linear-gradient(135deg, #10b981, #059669); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+      margin-top: 16px;
+      padding-top: 16px;
+      font-size: 16px;
+    }
+
+    .total strong { font-size: 24px; color: #10b981; }
+
+    .notice {
+      margin-top: 12px;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 14px;
+      display: none;
+      white-space: pre-wrap;
+    }
+
+    .notice.ok { display: block; background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+    .notice.err { display: block; background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+    .client-notice {
+      display: none;
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border: 1px solid rgba(6, 182, 212, 0.15);
+      border-radius: 8px;
+      background: rgba(6, 182, 212, 0.06);
+      color: #67e8f9;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.35;
+      white-space: pre-wrap;
+    }
+
+    .client-notice.visible {
+      display: block;
+    }
+
+    .lookup {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+
+    .saved-orders {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .saved-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .saved-head button {
+      width: auto;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 6px;
+      padding: 7px 9px;
+      background: rgba(15, 23, 42, 0.5);
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .saved-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .saved-order {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .saved-order strong,
+    .saved-order span {
+      display: block;
+    }
+
+    .saved-order span {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .pix-box {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.06);
+    }
+
+    .pix-box img {
+      width: 170px;
+      height: 170px;
+      object-fit: contain;
+      justify-self: center;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 8px;
+      padding: 6px;
+    }
+
+    .pix-copy {
+      min-height: 72px;
+      resize: vertical;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .pix-copy-btn {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .pix-copy-btn:hover {
+      background: linear-gradient(135deg, #34d399, #10b981);
+    }
+
+    .pix-copy-btn.copied {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .manual-pix-key {
+      display: grid;
+      gap: 5px;
+      padding: 11px 12px;
+      border: 1px dashed rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.04);
+      color: #34d399;
+    }
+
+    .manual-pix-key span {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .pix-guidance,
+    .live-badge {
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: rgba(6, 182, 212, 0.08);
+      color: #22d3ee;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .pix-guidance span {
+      display: block;
+      margin-top: 3px;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    .live-badge {
+      align-self: center;
+      white-space: nowrap;
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+    }
+
+    .delivery-code-card {
+      display: grid;
+      gap: 6px;
+      margin-top: 14px;
+      padding: 16px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 10px;
+      background: rgba(16, 185, 129, 0.08);
+      color: #34d399;
+      text-align: center;
+    }
+
+    .delivery-code-card strong {
+      display: block;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.7);
+      color: #22d3ee;
+      font-family: "SF Mono", Consolas, "Courier New", monospace;
+      font-size: clamp(30px, 8vw, 46px);
+      letter-spacing: 4px;
+      line-height: 1;
+      border: 1px solid rgba(6, 182, 212, 0.2);
+    }
+
+    .delivery-code-card small {
+      color: #34d399;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .delivery-code-card.locked {
+      border-color: rgba(245, 158, 11, 0.2);
+      background: rgba(245, 158, 11, 0.06);
+      color: #fbbf24;
+    }
+
+    .delivery-code-card.locked small {
+      color: #fbbf24;
+    }
+
+    .route-alert {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 10px;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      background: rgba(245, 158, 11, 0.06);
+      color: #fbbf24;
+    }
+
+    .route-alert span {
+      display: block;
+      margin-top: 2px;
+      color: #d97706;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .route-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #fff;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    .order-summary {
+      display: grid;
+      gap: 8px;
+    }
+
+    .order-summary strong {
+      color: #084578;
+      font-size: 16px;
+    }
+
+    .order-summary .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .order-summary .summary-item {
+      border-radius: 8px;
+      padding: 8px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.08);
+    }
+
+    .order-summary .summary-item span,
+    .order-summary .summary-line span {
+      display: block;
+      color: #64748b;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .order-summary .summary-item b,
+    .order-summary .summary-line b {
+      display: block;
+      margin-top: 2px;
+      font-size: 14px;
+      color: #e2e8f0;
+    }
+
+    .order-summary .summary-line {
+      border-radius: 8px;
+      padding: 8px;
+      background: rgba(15, 23, 42, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.08);
+    }
+
+    .pix-only {
+      border-color: rgba(6, 182, 212, 0.2);
+      background: rgba(6, 182, 212, 0.06);
+      color: #22d3ee;
+      font-weight: 800;
+    }
+
+    .chat-state {
+      border: 1px dashed rgba(148, 163, 184, 0.12);
+      border-radius: 10px;
+      padding: 14px;
+      color: #64748b;
+      background: rgba(15, 23, 42, 0.3);
+      margin-bottom: 12px;
+    }
+
+    .chat-card {
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .chat-head {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: rgba(15, 23, 42, 0.4);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .chat-head strong,
+    .chat-head span {
+      display: block;
+    }
+
+    .chat-head span {
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 3px;
+    }
+
+    .chat-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(6, 182, 212, 0.1);
+      color: #06b6d4;
+      font-weight: 900;
+    }
+
+    .support-messages-client {
+      display: grid;
+      align-content: start;
+      gap: 10px;
+      min-height: 260px;
+      max-height: 330px;
+      overflow-y: auto;
+      margin: 0;
+      padding: 14px;
+      border: 0;
+      border-radius: 0;
+      background: rgba(10, 14, 26, 0.4);
+    }
+
+    .support-msg-client {
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 10px;
+      padding: 9px 11px 7px;
+      background: rgba(15, 23, 42, 0.6);
+      font-size: 13px;
+      max-width: 86%;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+
+    .support-msg-client.admin {
+      background: rgba(15, 23, 42, 0.6);
+      justify-self: start;
+    }
+
+    .support-msg-client.cliente {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.2);
+      justify-self: end;
+    }
+
+    .support-msg-client strong {
+      margin-bottom: 4px;
+      color: #64748b;
+      font-size: 12px;
+    }
+
+    .support-msg-client small {
+      margin-top: 5px;
+      color: #475569;
+      font-size: 10px;
+      text-align: right;
+    }
+
+    .chat-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 128px;
+      gap: 8px;
+      align-items: end;
+      padding: 12px;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    .chat-actions .primary {
+      width: 100%;
+      align-self: stretch;
+    }
+
+    .chat-send-tools {
+      display: grid;
+      gap: 8px;
+    }
+
+    .support-file-button {
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.5);
+      color: #94a3b8;
+      font-size: 18px;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+
+    .support-file-button:hover {
+      border-color: #06b6d4;
+      color: #06b6d4;
+    }
+
+    .hidden-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .arquivo-preview {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      margin: 0 14px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .arquivo-preview.hidden {
+      display: none;
+    }
+
+    .arquivo-preview img {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+    }
+
+    .arquivo-preview-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .arquivo-preview-info span {
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .arquivo-preview-remove {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 6px;
+      background: rgba(239, 68, 68, 0.08);
+      color: #f87171;
+      font-size: 14px;
+      font-weight: 900;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .support-attachment {
+      display: grid;
+      gap: 5px;
+      margin-top: 8px;
+      color: #06b6d4;
+      font-size: 12px;
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .support-attachment img {
+      width: min(180px, 100%);
+      max-height: 150px;
+      object-fit: cover;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 8px;
+      background: #1e293b;
+    }
+
+    .support-attachment-file {
+      display: inline-flex;
+      width: fit-content;
+      padding: 8px 10px;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.5);
+    }
+
+    .small-action {
+      width: auto;
+      border: 1px solid rgba(148, 163, 184, 0.12);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: rgba(15, 23, 42, 0.5);
+      color: #94a3b8;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+      .layout { grid-template-columns: 1fr; }
+      .panel { position: static; }
+      .client-action-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .topbar { align-items: flex-start; flex-direction: column; }
+      .status-link { width: 100%; }
+      .row { grid-template-columns: 1fr; }
+      .order-summary .summary-grid { grid-template-columns: 1fr; }
+      .panel-tabs button .tab-icon { grid-area: icon; font-size: 28px; }
+      .panel-tabs button .tab-label { grid-area: label; justify-self: start; }
+      .panel-tabs button .tab-hint { grid-area: hint; justify-self: end; }
+      .panel-tabs button .tab-arrow { display: none; }
+      .geo-permission-notice { align-items: stretch; flex-direction: column; }
+      .geo-permission-notice button { width: 100%; }
+    }
+    /* AquaLog customer storefront redesign */
+
+    .skeleton {
+      background: linear-gradient(90deg, rgba(15, 23, 42, 0.5) 25%, rgba(15, 23, 42, 0.8) 50%, rgba(15, 23, 42, 0.5) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.5s ease-in-out infinite;
+      border-radius: 8px;
+    }
+
+    @keyframes skeleton-pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-card {
+      min-height: 150px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 10px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .skeleton-line {
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    .skeleton-line.wide { width: 80%; }
+    .skeleton-line.medium { width: 50%; }
+    .skeleton-line.short { width: 30%; }
+    .skeleton-line.price { height: 28px; width: 40%; }
+
+    .coupon-row .small-action {
+      width: auto;
+      padding: 11px 18px;
+      background: linear-gradient(135deg, #06b6d4, #0891b2);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+    }
+
+    .coupon-row .small-action:hover {
+      background: linear-gradient(135deg, #22d3ee, #06b6d4);
+      box-shadow: 0 6px 16px rgba(6, 182, 212, 0.35);
+    }
+
+    .total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(148, 163, 184, 0.1);
+      margin-top: 16px;
+      padding-top: 16px;
+      font-size: 16px;
+    }
+
+    .total strong {
+      font-size: 28px;
+      color: #10b981;
+      font-weight: 800;
+      text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    }
+
+    .product-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: rgba(6, 182, 212, 0.06);
+      border: 1px solid rgba(148, 163, 184, 0.08);
+      margin-bottom: 4px;
+    }
+
+    .product-img-placeholder {
+      width: 100%;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      background: rgba(6, 182, 212, 0.06);
+      border: 1px solid rgba(148, 163, 184, 0.08);
+      margin-bottom: 4px;
+      color: #06b6d4;
+      font-size: 32px;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <i class="ph ph-drop" style="font-size:1.5rem;color:#06b6d4"></i>
+      <div>
+        <strong id="brandName">AquaLog</strong>
+        <span id="brandSubtitle">Pedido online da distribuidora</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section>
+      <div class="section-title">
+        <div>
+          <h1 id="clienteTitulo">Faça seu pedido</h1>
+          <p id="clienteSubtitulo">Monte seu carrinho, informe o endereço e pague tudo em um Pix só.</p>
+        </div>
+      </div>
+      <div id="avisoCliente" class="client-notice"></div>
+      <div id="avisoLojaFechada" class="client-notice" style="border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.06); color: #fca5a5;">
+        A loja está fechada no momento. Você pode navegar os produtos mas não será possível finalizar pedidos.
+      </div>
+      <div id="geoPermissionNotice" class="geo-permission-notice">
+        <div>
+          <strong>Permita sua localização</strong>
+          <span>Isso ajuda a entrega e o rastreamento ficarem mais precisos. O pedido continua usando o endereço informado.</span>
+        </div>
+        <button type="button" onclick="capturarLocalizacaoCliente(true)">Permitir</button>
+      </div>
+      <div id="clienteHome" class="client-home">
+        <div class="client-action-grid">
+          <button id="homeComprar" class="client-action-card" type="button" onclick="abrirModoCliente('comprar')">
+            <span class="icon"><i class="ph ph-drop"></i></span>
+            <strong>Comprar água</strong>
+            <span>Escolha os produtos e finalize com Pix.</span>
+          </button>
+          <button id="homeConsulta" class="client-action-card" type="button" onclick="abrirModoCliente('consulta')">
+            <span class="icon"><i class="ph ph-magnifying-glass"></i></span>
+            <strong>Acompanhar pedido</strong>
+            <span>Veja pagamento, status e código de entrega.</span>
+          </button>
+          <button id="homeConversa" class="client-action-card" type="button" onclick="abrirModoCliente('conversa')">
+            <span class="icon"><i class="ph ph-chat-circle"></i></span>
+            <strong>Atendimento</strong>
+            <span>Fale com a distribuidora sobre um pedido.</span>
+          </button>
+        </div>
+        <div class="client-quick-status">Acompanhe tudo pelo número do pedido e telefone. Para rastreamento mais preciso, permita sua localização.</div>
+      </div>
+      <div id="productArea" class="product-area hidden">
+        <div class="product-area-head">
+          <h2>Produtos</h2>
+          <button class="back-home" type="button" onclick="abrirModoCliente('inicio')">Voltar</button>
+        </div>
+        <input id="buscaProduto" class="product-search" placeholder="Buscar produto..." oninput="debouncedRenderProdutos()">
+        <div id="produtos" class="grid"></div>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-tabs panel-tabs-hidden">
+        <button id="tabPedido" class="tab-pedido active" type="button" onclick="abrirModoCliente('comprar')">
+          <span class="tab-icon"><i class="ph ph-shopping-cart"></i></span>
+          <span class="tab-label">Pedido</span>
+          <span class="tab-hint">Comprar</span>
+          <span class="tab-arrow"><i class="ph ph-arrow-right"></i></span>
+        </button>
+        <button id="tabConsulta" class="tab-consulta" type="button" onclick="abrirModoCliente('consulta')">
+          <span class="tab-icon"><i class="ph ph-magnifying-glass"></i></span>
+          <span class="tab-label">Acompanhar</span>
+          <span class="tab-hint">Status</span>
+          <span class="tab-arrow"><i class="ph ph-arrow-right"></i></span>
+        </button>
+        <button id="tabConversa" class="tab-conversa" type="button" onclick="abrirModoCliente('conversa')">
+          <span class="tab-icon"><i class="ph ph-chat-circle"></i></span>
+          <span class="tab-label">Conversa</span>
+          <span class="tab-hint">Suporte</span>
+          <span class="tab-arrow"><i class="ph ph-arrow-right"></i></span>
+        </button>
+      </div>
+
+      <section id="abaPedido" class="tab-content active">
+        <h2>Dados do pedido</h2>
+        <div id="selecionado" class="selected cart-empty">Adicione produtos ao carrinho para começar.</div>
+
+        <form id="formPedido">
+          <div class="row">
+            <div>
+              <label for="nome">Nome</label>
+              <input id="nome" required minlength="3" maxlength="100" placeholder="Seu nome">
+            </div>
+            <div>
+              <label for="telefone">Telefone</label>
+              <input id="telefone" required minlength="10" maxlength="11" pattern="[0-9]{10,11}" placeholder="DDD + número (10 ou 11 dígitos)">
+            </div>
+          </div>
+
+          <label for="email">E-mail para pagamento Pix</label>
+          <input id="email" type="email" placeholder="Opcional">
+
+          <div class="row">
+            <div>
+              <label for="endereco">Rua / avenida</label>
+              <div id="enderecoSuggestWrap" class="address-suggest-client">
+                <input id="endereco" required minlength="3" maxlength="200" placeholder="Rua, avenida, travessa" autocomplete="off">
+                <div id="enderecoSugestoes" class="options"></div>
+              </div>
+            </div>
+            <div>
+              <label for="numeroCasa">Número</label>
+              <input id="numeroCasa" placeholder="Ex: 120">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="bairro">Bairro</label>
+              <input id="bairro" required minlength="2" maxlength="100" placeholder="Bairro">
+            </div>
+          </div>
+
+          <label for="referencia">Referência</label>
+          <input id="referencia" placeholder="Opcional">
+
+          <label for="pagamento">Pagamento</label>
+          <select id="pagamento" class="pix-only">
+            <option>Pix</option>
+          </select>
+
+          <label for="cupomCodigo">Cupom de desconto</label>
+          <div class="coupon-row">
+            <input id="cupomCodigo" maxlength="30" placeholder="Ex: BEMVINDO10">
+            <button class="small-action" type="button" onclick="aplicarCupom()">Aplicar</button>
+          </div>
+          <div id="cupomMsg" class="coupon-msg"></div>
+
+          <div class="total">
+            <span>Total</span>
+            <strong id="total">R$ 0,00</strong>
+          </div>
+
+          <button id="btnConfirmarPedido" class="primary" type="submit" style="margin-top:16px">Confirmar pedido</button>
+          <div id="msg" class="notice"></div>
+        </form>
+      </section>
+
+      <section id="abaConsulta" class="tab-content">
+        <h2>Acompanhar</h2>
+        <label for="consultaId">Número do pedido</label>
+        <input id="consultaId" type="number" min="1" placeholder="Ex: 52">
+        <label for="consultaTelefone">Telefone usado no pedido</label>
+        <input id="consultaTelefone" placeholder="DDD + número">
+        <button class="primary" type="button" onclick="consultarPedido()" style="margin-top:12px">Ver status</button>
+        <div id="consultaMsg" class="notice"></div>
+
+        <div class="saved-orders">
+          <div class="saved-head">
+            <h2>Pedidos ativos</h2>
+            <button type="button" onclick="limparPedidosSalvos()">Limpar lista</button>
+          </div>
+          <div id="pedidosSalvos" class="saved-list"></div>
+        </div>
+      </section>
+
+      <section id="abaConversa" class="tab-content">
+        <h2>Conversa</h2>
+        <div id="chatVazio" class="chat-state">Abra um pedido em "Acompanhar" para conversar com o atendimento.</div>
+        <div id="suporteCliente" class="chat-card" style="display:none">
+          <div class="chat-head">
+            <div class="chat-avatar">A</div>
+            <div>
+              <strong id="suporteResumo">Conversa do pedido</strong>
+              <span id="suporteSubtitulo">Atendimento da distribuidora</span>
+            </div>
+            <span class="live-badge">Suporte</span>
+          </div>
+          <div id="mensagensCliente" class="support-messages-client"></div>
+          <div id="arquivoPreview" class="arquivo-preview hidden">
+            <img id="arquivoPreviewImg" src="" alt="Preview">
+            <div class="arquivo-preview-info">
+              <span id="arquivoPreviewNome"></span>
+              <button type="button" class="arquivo-preview-remove" onclick="limparArquivoSelecionado()">&times;</button>
+            </div>
+          </div>
+          <div id="chatErro" class="chat-erro" style="display:none;padding:8px 14px;margin:0 14px 8px;border-radius:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#fca5a5;font-size:13px;font-weight:600"></div>
+          <div class="chat-actions">
+            <textarea id="mensagemCliente" placeholder="Escreva sua dúvida"></textarea>
+            <div class="chat-send-tools">
+              <label class="support-file-button" for="arquivoSuporteCliente"><i class="ph ph-paperclip"></i></label>
+              <input id="arquivoSuporteCliente" type="file" accept="image/*,.pdf,.txt" class="hidden-input">
+              <button class="primary" type="button" onclick="enviarMensagemCliente()">Enviar</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <div id="siteConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,14,26,0.85);align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+    <div style="background:#0f172a;border:1px solid rgba(148,163,184,0.12);border-radius:14px;padding:28px;max-width:380px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,0.5)">
+      <h3 id="siteConfirmTitle" style="margin:0 0 8px;color:#e2e8f0;font-size:17px;font-weight:700"></h3>
+      <p id="siteConfirmMsg" style="margin:0;color:#94a3b8;font-size:14px;line-height:1.5;white-space:pre-line"></p>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px">
+        <button onclick="siteFecharConfirm()" style="padding:10px 20px;border:1px solid rgba(148,163,184,0.15);border-radius:8px;background:transparent;color:#94a3b8;font-weight:600;cursor:pointer;font-size:14px">Cancelar</button>
+        <button id="siteConfirmBtn" onclick="siteExecutarConfirm()" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;font-weight:700;cursor:pointer;font-size:14px">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var produtos = [];
+    var carrinho = [];
+    var pixChave = '';
+    var cupomAplicado = null;
+    var configCliente = {};
+    var elProdutos = document.getElementById('produtos');
+    var elSelecionado = document.getElementById('selecionado');
+    var elTotal = document.getElementById('total');
+
+    var _siteConfirmCb = null;
+    function siteMostrarConfirm(titulo, msg, cb) {
+      document.getElementById('siteConfirmTitle').textContent = titulo;
+      document.getElementById('siteConfirmMsg').textContent = msg;
+      _siteConfirmCb = cb;
+      document.getElementById('siteConfirmModal').style.display = 'flex';
+      document.getElementById('siteConfirmModal').style.zIndex = '99999';
+    }
+    function siteFecharConfirm() {
+      document.getElementById('siteConfirmModal').style.display = 'none';
+      document.getElementById('siteConfirmModal').style.zIndex = '';
+      _siteConfirmCb = null;
+    }
+    function siteExecutarConfirm() {
+      if (_siteConfirmCb) _siteConfirmCb();
+      siteFecharConfirm();
+    }
+    var elMsg = document.getElementById('msg');
+    var pedidoAtivo = null;
+    var eventosPedido = null;
+    var eventosPedidoChave = '';
+    var STORAGE_CLIENTE = 'aqualog_cliente';
+    var clienteGeoAtual = null;
+    var timerEnderecoSugestao = null;
+    var STORAGE_PEDIDOS = 'aqualog_pedidos';
+
+    function dinheiro(v) {
+      return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function confirmacaoTexto(status) {
+      var mapa = {
+        confirmado: 'Confirmado',
+        aguardando_confirmacao: 'Aguardando confirmação da loja',
+        aguardando_pagamento: 'Aguardando pagamento Pix'
+      };
+      return mapa[status] || status || 'Confirmado';
+    }
+
+    function formatarDataHora(valor) {
+      if (!valor) return '-';
+      var data = new Date(valor);
+      if (Number.isNaN(data.getTime())) return '-';
+      return data.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function mostrarAbaCliente(aba) {
+      ['pedido', 'consulta', 'conversa'].forEach(function(nome) {
+        var ativa = nome === aba;
+        document.getElementById('aba' + nome.charAt(0).toUpperCase() + nome.slice(1)).classList.toggle('active', ativa);
+        document.getElementById('tab' + nome.charAt(0).toUpperCase() + nome.slice(1)).classList.toggle('active', ativa);
+      });
+    }
+
+    function abrirModoCliente(modo) {
+      var home = document.getElementById('clienteHome');
+      var productArea = document.getElementById('productArea');
+      ['homeComprar', 'homeConsulta', 'homeConversa'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+      });
+      if (modo === 'comprar') {
+        document.getElementById('homeComprar').classList.add('active');
+        home.classList.add('hidden');
+        productArea.classList.remove('hidden');
+        mostrarAbaCliente('pedido');
+        document.getElementById('clienteTitulo').textContent = 'Escolha seus produtos';
+        document.getElementById('clienteSubtitulo').textContent = 'Adicione ao carrinho e finalize o pedido no painel ao lado.';
+        produtosVisiveis = true;
+        iniciarPollingProdutos();
+        return;
+      }
+      if (modo === 'consulta') {
+        document.getElementById('homeConsulta').classList.add('active');
+        home.classList.remove('hidden');
+        productArea.classList.add('hidden');
+        mostrarAbaCliente('consulta');
+        document.getElementById('clienteTitulo').textContent = 'Acompanhar pedido';
+        document.getElementById('clienteSubtitulo').textContent = 'Informe número do pedido e telefone para ver o andamento.';
+        produtosVisiveis = false;
+        pararPollingProdutos();
+        return;
+      }
+      if (modo === 'conversa') {
+        document.getElementById('homeConversa').classList.add('active');
+        home.classList.remove('hidden');
+        productArea.classList.add('hidden');
+        mostrarAbaCliente('conversa');
+        document.getElementById('clienteTitulo').textContent = 'Atendimento';
+        document.getElementById('clienteSubtitulo').textContent = 'Abra uma conversa usando seu pedido e telefone.';
+        produtosVisiveis = false;
+        pararPollingProdutos();
+        return;
+      }
+      home.classList.remove('hidden');
+      productArea.classList.add('hidden');
+      produtosVisiveis = false;
+      pararPollingProdutos();
+      fecharEventosPedido();
+      document.getElementById('clienteTitulo').textContent = 'Bem-vindo ao ÁquaLog';
+      document.getElementById('clienteSubtitulo').textContent = 'Escolha uma opção para começar.';
+    }
+
+    function escapeHtml(v) {
+      return String(v ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function valor(id) {
+      return document.getElementById(id).value.trim();
+    }
+
+    function limparTelefone(t) {
+      return String(t || '').replace(/\D/g, '');
+    }
+
+    function mostrarMsg(el, tipo, texto) {
+      el.className = 'notice ' + tipo;
+      el.textContent = texto;
+    }
+
+    function lerJson(chave, padrao) {
+      try {
+        return JSON.parse(localStorage.getItem(chave)) || padrao;
+      } catch (e) {
+        return padrao;
+      }
+    }
+
+    function salvarDadosCliente(payload) {
+      localStorage.setItem(STORAGE_CLIENTE, JSON.stringify({
+        nome: payload.nome,
+        telefone: payload.telefone,
+        email: payload.email || '',
+        endereco: payload.endereco,
+        numeroCasa: payload.numero_casa || '',
+        bairro: payload.bairro,
+        referencia: payload.referencia || ''
+      }));
+    }
+
+    function restaurarDadosCliente() {
+      var dados = lerJson(STORAGE_CLIENTE, null);
+      if (!dados) return;
+      ['nome', 'telefone', 'email', 'endereco', 'bairro', 'referencia'].forEach(function(id) {
+        if (dados[id] && document.getElementById(id)) document.getElementById(id).value = dados[id];
+      });
+      if (dados.numeroCasa && document.getElementById('numeroCasa')) document.getElementById('numeroCasa').value = dados.numeroCasa;
+    }
+
+    function pedidoFinalizado(status) {
+      return ['entregue', 'cancelado'].includes(String(status || '').toLowerCase());
+    }
+
+    function limparPedidosAntigos(pedidos) {
+      return (pedidos || []).filter(function(p) {
+        return !pedidoFinalizado(p.status);
+      }).slice(0, 8);
+    }
+
+    function salvarPedidoLocal(pedido, telefone) {
+      var pedidos = lerJson(STORAGE_PEDIDOS, []);
+      pedidos = pedidos.filter(function(p) { return p.id !== pedido.id; });
+      if (!pedidoFinalizado(pedido.status)) {
+        pedidos.unshift({
+          id: pedido.id,
+          telefone: telefone,
+          status: pedido.status,
+          pagamento_status: pedido.pagamento_status,
+          confirmacao_status: pedido.confirmacao_status,
+          codigo_entrega: pedido.codigo_entrega,
+          total: pedido.total,
+          produto: pedido.produto,
+          criado_em: pedido.data_criacao || new Date().toISOString()
+        });
+      }
+      localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(limparPedidosAntigos(pedidos)));
+      renderPedidosSalvos();
+    }
+
+    function renderPedidosSalvos() {
+      var box = document.getElementById('pedidosSalvos');
+      var pedidos = limparPedidosAntigos(lerJson(STORAGE_PEDIDOS, []));
+      localStorage.setItem(STORAGE_PEDIDOS, JSON.stringify(pedidos));
+      if (!box) return;
+      if (!pedidos.length) {
+        box.innerHTML = '<div class="meta">Nenhum pedido ativo neste aparelho.</div>';
+        return;
+      }
+      box.innerHTML = pedidos.map(function(p) {
+        var codigoResumo = p.codigo_entrega ? p.codigo_entrega : 'bloqueado';
+        return '<button class="saved-order" type="button" data-id="' + p.id + '" data-telefone="' + escapeHtml(p.telefone) + '" onclick="abrirPedidoSalvo(Number(this.dataset.id), this.dataset.telefone)">' +
+          '<strong>Pedido #' + p.id + ' - ' + dinheiro(p.total) + '</strong>' +
+          '<span>' + escapeHtml(p.produto || 'Pedido') + ' | ' + formatarDataHora(p.criado_em) + ' | ' + escapeHtml(confirmacaoTexto(p.confirmacao_status)) + ' | Código: ' + escapeHtml(codigoResumo) + '</span>' +
+        '</button>';
+      }).join('');
+    }
+
+    function limparPedidosSalvos() {
+      localStorage.removeItem(STORAGE_PEDIDOS);
+      renderPedidosSalvos();
+    }
+
+    function abrirPedidoSalvo(id, telefone) {
+      document.getElementById('consultaId').value = id;
+      document.getElementById('consultaTelefone').value = telefone;
+      consultarPedido();
+    }
+
+    function ativarSuporte(id, telefone) {
+      pedidoAtivo = { id: id, telefone: telefone };
+      ativarEventosPedido(id, telefone);
+      document.getElementById('chatVazio').style.display = 'none';
+      document.getElementById('suporteCliente').style.display = 'block';
+      document.getElementById('suporteResumo').textContent = 'Pedido #' + id;
+      document.getElementById('suporteSubtitulo').textContent = 'Telefone: ' + telefone;
+      carregarMensagensCliente();
+      var campo = document.getElementById('mensagemCliente');
+      if (campo && !campo.dataset.enterReady) {
+        campo.dataset.enterReady = '1';
+        campo.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) enviarMensagemCliente();
+        });
+      }
+    }
+
+    function ativarEventosPedido(id, telefone) {
+      if (!window.EventSource) return;
+      var chave = id + ':' + telefone;
+      if (eventosPedido && eventosPedidoChave === chave) return;
+      if (eventosPedido) eventosPedido.close();
+      eventosPedidoChave = chave;
+      eventosPedido = new EventSource('/api/v1/site/pedidos/' + encodeURIComponent(id) + '/events?telefone=' + encodeURIComponent(telefone));
+      eventosPedido.onmessage = function(e) {
+        var msg;
+        try { msg = JSON.parse(e.data); } catch (err) { return; }
+        if (!msg || msg.type !== 'refresh') return;
+        var payload = msg.payload || {};
+        var pedidoId = payload.pedido_id || payload.id;
+        if (Number(pedidoId) !== Number(id)) return;
+
+        if (payload.acao === 'mensagem_suporte' || payload.acao === 'suporte_apagado') {
+          carregarMensagensCliente(true);
+          return;
+        }
+
+        if (['pagamento_atualizado', 'pedido_confirmado', 'status_admin', 'status_entregador'].includes(payload.acao)) {
+          consultarPedidoDireto(id, telefone, { viaEvento: true }).then(function(pedido) {
+            if (pedido && pedido.pagamento_status === 'pago') {
+              abrirModoCliente('consulta');
+            }
+          });
+        }
+      };
+    }
+
+    function fecharEventosPedido() {
+      if (eventosPedido) {
+        eventosPedido.close();
+        eventosPedido = null;
+        eventosPedidoChave = '';
+      }
+    }
+
+    window.addEventListener('beforeunload', fecharEventosPedido);
+
+    function renderPix(data) {
+      if (!data) return '';
+      var chaveManual = data.pix_chave || pixChave || '';
+      if (!data.pix_qrcode_base64 && !data.pix_copia_cola && !data.pix_ticket_url && !chaveManual) return '';
+      var html = '<div class="pix-box">';
+      html += '<strong>Pix manual</strong>';
+      if (data.pix_qrcode_base64) {
+        html += '<img alt="QR Code Pix" src="data:image/png;base64,' + data.pix_qrcode_base64 + '">';
+      }
+      if (data.pix_copia_cola) {
+        html += '<textarea class="pix-copy" readonly>' + escapeHtml(data.pix_copia_cola) + '</textarea>';
+        html += '<button class="primary pix-copy-btn" type="button" onclick="copiarPix(this)">Copiar Pix</button>';
+      }
+      if (data.pix_ticket_url) {
+        html += '<a class="primary" style="text-align:center;text-decoration:none" href="' + escapeHtml(data.pix_ticket_url) + '" target="_blank" rel="noreferrer">Abrir Pix</a>';
+      }
+      if (!data.pix_copia_cola && chaveManual) {
+        html += '<div class="manual-pix-key"><span>Chave Pix da distribuidora</span><strong>' + escapeHtml(chaveManual) + '</strong></div>';
+      }
+      html += '<div class="pix-guidance"><strong>Aguardando pagamento</strong><span>Pague pelo QR Code ou pelo Pix copia e cola. Depois, abra o Atendimento e envie o comprovante por lá.</span></div>';
+      html += '</div>';
+      return html;
+    }
+
+    function lerArquivoComoDataUrl(arquivo) {
+      return new Promise(function(resolve, reject) {
+        var reader = new FileReader();
+        reader.onload = function() { resolve(reader.result); };
+        reader.onerror = reject;
+        reader.readAsDataURL(arquivo);
+      });
+    }
+
+    async function copiarPix(botao) {
+      var box = botao.closest('.pix-box');
+      var campo = box ? box.querySelector('.pix-copy') : null;
+      var texto = campo ? campo.value : '';
+      if (!texto) return;
+
+      var copiado = false;
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(texto);
+          copiado = true;
+        } catch (e) {
+          copiado = false;
+        }
+      }
+
+      if (!copiado && campo) {
+        campo.focus();
+        campo.select();
+        campo.setSelectionRange(0, texto.length);
+        try {
+          copiado = document.execCommand('copy');
+        } catch (e) {
+          copiado = false;
+        }
+      }
+
+      var textoOriginal = botao.textContent;
+      botao.textContent = copiado ? 'Copiado!' : 'Copie manualmente';
+      botao.classList.toggle('copied', copiado);
+      setTimeout(function() {
+        botao.textContent = textoOriginal;
+        botao.classList.remove('copied');
+      }, 1800);
+    }
+
+    function renderCodigoPedido(data) {
+      if (!data) return '';
+      if (data.codigo_entrega) {
+        return '<div class="delivery-code-card">' +
+          '<span>Código de entrega liberado</span>' +
+          '<strong>' + escapeHtml(data.codigo_entrega) + '</strong>' +
+          '<small>Passe este código ao entregador somente quando receber o produto.</small>' +
+        '</div>';
+      }
+      if (data.confirmacao_status === 'aguardando_pagamento') {
+        return '<div class="delivery-code-card locked">' +
+          '<span>Código bloqueado</span>' +
+          '<small>Ele aparece aqui automaticamente depois que o Pix for aprovado.</small>' +
+        '</div>';
+      }
+      return '';
+    }
+
+    function statusCurto(status) {
+      var mapa = {
+        recebido: 'Recebido',
+        aguardando_entregador: 'Aguardando entregador',
+        separando: 'Separando',
+        em_preparo: 'Em preparo',
+        saiu_para_entrega: 'A caminho',
+        entregue: 'Entregue',
+        cancelado: 'Cancelado'
+      };
+      return mapa[status] || String(status || '-').replaceAll('_', ' ');
+    }
+
+    function etapaPedido(pedido) {
+      var status = String((pedido && pedido.status) || 'recebido').toLowerCase();
+      var pagamento = String((pedido && pedido.pagamento_status) || '').toLowerCase();
+      var confirmacao = String((pedido && pedido.confirmacao_status) || '').toLowerCase();
+      if (status === 'cancelado' || pagamento === 'expirado') return -1;
+      if (status === 'entregue') return 4;
+      if (status === 'saiu_para_entrega') return 3;
+      if (['aguardando_entregador', 'separando', 'em_preparo'].includes(status)) return 2;
+      if (pagamento === 'pago' || confirmacao === 'confirmado') return 2;
+      if (confirmacao === 'aguardando_pagamento' || pagamento === 'aguardando_pix') return 1;
+      return 0;
+    }
+
+    function renderProgressoPedido(pedido) {
+      var atual = etapaPedido(pedido || {});
+      var cancelado = atual < 0;
+      var etapas = ['Recebido', 'Pix', 'Preparo', 'Entrega', 'Entregue'];
+      return '<div class="order-progress" aria-label="Progresso do pedido">' + etapas.map(function(nome, idx) {
+        var classe = 'todo';
+        if (cancelado) {
+          classe = idx === 0 ? 'cancelled' : 'todo';
+        } else if (idx < atual) {
+          classe = 'done';
+        } else if (idx === atual) {
+          classe = 'active';
+        }
+        var texto = cancelado && idx === 0 ? 'Cancelado' : nome;
+        return '<div class="progress-step ' + classe + '"><span>' + texto + '</span></div>';
+      }).join('') + '</div>';
+    }
+
+    function pagamentoCurto(status) {
+      var mapa = {
+        pago: 'Pago',
+        aguardando_pix: 'Aguardando Pix',
+        recusado: 'Recusado',
+        expirado: 'Expirado'
+      };
+      return mapa[status] || String(status || 'Pix').replaceAll('_', ' ');
+    }
+
+    function renderAvisoRota(pedido) {
+      if (!pedido || pedido.status !== 'saiu_para_entrega') return '';
+      return '<div class="route-alert">' +
+        '<div class="route-icon">&#10146;</div>' +
+        '<div><strong>Entregador a caminho</strong><span>Seu pedido já saiu e está indo para o endereço informado.</span></div>' +
+      '</div>';
+    }
+
+    function renderResumoPedido(p) {
+      var endereco = [p.endereco, p.numero_casa, p.bairro].filter(Boolean).join(', ');
+      var resumoProdutos = p.produto || '-';
+      var descontoLinha = Number(p.desconto_valor || 0) > 0
+        ? '<div class="summary-item"><span>Cupom</span><b>' + escapeHtml(p.cupom_codigo || '-') + ' - ' + dinheiro(p.desconto_valor) + '</b></div>'
+        : '';
+      return '<div class="order-summary">' +
+        '<strong>Pedido #' + escapeHtml(p.id) + '</strong>' +
+        '<div class="summary-grid">' +
+          '<div class="summary-item"><span>Pagamento</span><b>' + escapeHtml(pagamentoCurto(p.pagamento_status)) + '</b></div>' +
+          '<div class="summary-item"><span>Produtos</span><b>' + escapeHtml(resumoProdutos) + '</b></div>' +
+          '<div class="summary-item"><span>Total</span><b>' + dinheiro(p.total) + '</b></div>' +
+          descontoLinha +
+        '</div>' +
+        '<div class="summary-line"><span>Endereço</span><b>' + escapeHtml(endereco || '-') + '</b></div>' +
+      '</div>';
+    }
+
+    function totalCarrinhoBruto() {
+      return carrinho.reduce(function(total, item) {
+        return total + Number(item.preco) * Number(item.quantidade);
+      }, 0);
+    }
+
+    function descontoCarrinho() {
+      if (!cupomAplicado) return 0;
+      return totalCarrinhoBruto() * Number(cupomAplicado.percentual || 0) / 100;
+    }
+
+    function totalCarrinho() {
+      return Math.max(0, totalCarrinhoBruto() - descontoCarrinho());
+    }
+
+    function atualizarTotal() {
+      elTotal.textContent = dinheiro(totalCarrinho());
+      var msg = document.getElementById('cupomMsg');
+      if (msg && cupomAplicado) {
+        msg.className = 'coupon-msg ok';
+        msg.textContent = cupomAplicado.codigo + ' aplicado: -' + dinheiro(descontoCarrinho());
+      }
+    }
+
+    function produtoPorId(id) {
+      return produtos.find(function(p) { return Number(p.id) === Number(id); });
+    }
+
+    function itemCarrinho(id) {
+      return carrinho.find(function(item) { return Number(item.produto_id) === Number(id); });
+    }
+
+    function resumoCarrinho() {
+      return carrinho.map(function(item) {
+        return item.nome + ' x' + item.quantidade;
+      }).join(', ');
+    }
+
+    function renderCarrinho() {
+      if (!carrinho.length) {
+        elSelecionado.className = 'selected cart-empty';
+        elSelecionado.innerHTML = 'Adicione produtos ao carrinho para começar.';
+        atualizarTotal();
+        return;
+      }
+      elSelecionado.className = 'selected';
+      elSelecionado.innerHTML = '<div class="cart-list">' + carrinho.map(function(item) {
+        return '<div class="cart-item">' +
+          '<div><strong>' + escapeHtml(item.nome) + '</strong><span>' + dinheiro(item.preco) + ' cada | Subtotal: ' + dinheiro(Number(item.preco) * Number(item.quantidade)) + '</span></div>' +
+          '<div class="cart-controls">' +
+            '<button type="button" onclick="alterarQuantidadeCarrinho(' + item.produto_id + ', ' + (item.quantidade - 1) + ')">-</button>' +
+            '<input type="number" min="1" max="' + item.estoque + '" step="1" value="' + item.quantidade + '" onchange="alterarQuantidadeCarrinho(' + item.produto_id + ', this.value)">' +
+            '<button type="button" onclick="alterarQuantidadeCarrinho(' + item.produto_id + ', ' + (item.quantidade + 1) + ')">+</button>' +
+          '</div>' +
+          '<button class="cart-remove" type="button" onclick="removerDoCarrinho(' + item.produto_id + ')">Remover</button>' +
+        '</div>';
+      }).join('') + '</div>';
+      atualizarTotal();
+    }
+
+    function adicionarAoCarrinho(id) {
+      var produto = produtoPorId(id);
+      if (!produto) return;
+      var campoQtd = document.getElementById('qtdProduto-' + id);
+      var quantidade = Math.max(1, Number(campoQtd ? campoQtd.value : 1) || 1);
+      var existente = itemCarrinho(id);
+      var quantidadeAtual = existente ? existente.quantidade : 0;
+      var novaQuantidade = quantidadeAtual + quantidade;
+      if (novaQuantidade > produto.estoque) {
+        mostrarMsg(elMsg, 'err', 'Estoque insuficiente para ' + produto.nome + '. Disponível: ' + produto.estoque + '.');
+        return;
+      }
+      if (existente) {
+        existente.quantidade = novaQuantidade;
+        existente.preco = Number(produto.preco);
+        existente.estoque = Number(produto.estoque);
+      } else {
+        carrinho.push({
+          produto_id: produto.id,
+          nome: produto.nome,
+          preco: Number(produto.preco),
+          estoque: Number(produto.estoque),
+          quantidade: novaQuantidade
+        });
+      }
+      mostrarMsg(elMsg, '', '');
+      ultimoPedidoGerado = null;
+      if (cupomAplicado) limparCupom('Reaplique o cupom depois de alterar o carrinho.', 'err');
+      renderCarrinho();
+    }
+
+    function alterarQuantidadeCarrinho(id, valor) {
+      var item = itemCarrinho(id);
+      if (!item) return;
+      var quantidade = Math.max(1, Math.floor(Number(valor) || 1));
+      if (quantidade > item.estoque) {
+        quantidade = item.estoque;
+        mostrarMsg(elMsg, 'err', 'Quantidade ajustada ao estoque disponível.');
+      }
+      item.quantidade = quantidade;
+      ultimoPedidoGerado = null;
+      if (cupomAplicado) limparCupom('Reaplique o cupom depois de alterar o carrinho.', 'err');
+      renderCarrinho();
+    }
+
+    function removerDoCarrinho(id) {
+      carrinho = carrinho.filter(function(item) { return Number(item.produto_id) !== Number(id); });
+      ultimoPedidoGerado = null;
+      if (!carrinho.length) {
+        limparCupom('Carrinho vazio. O cupom foi removido.', 'err');
+      } else if (cupomAplicado) {
+        limparCupom('Reaplique o cupom depois de alterar o carrinho.', 'err');
+      }
+      renderCarrinho();
+    }
+
+    function sincronizarCarrinhoComProdutos() {
+      var tamanhoAnterior = carrinho.length;
+      var itensRemovidos = [];
+      carrinho = carrinho.map(function(item) {
+        var produto = produtoPorId(item.produto_id);
+        if (!produto) {
+          itensRemovidos.push(item.nome);
+          return null;
+        }
+        item.nome = produto.nome;
+        item.preco = Number(produto.preco);
+        item.estoque = Number(produto.estoque);
+        if (item.quantidade > item.estoque) {
+          item.quantidade = item.estoque;
+        }
+        if (item.quantidade <= 0) {
+          itensRemovidos.push(item.nome);
+          return null;
+        }
+        return item;
+      }).filter(Boolean);
+      if (carrinho.length !== tamanhoAnterior) ultimoPedidoGerado = null;
+      if (itensRemovidos.length) {
+        mostrarMsg(elMsg, 'err', 'Produtos removidos do carrinho: ' + itensRemovidos.join(', '));
+      }
+      if (!carrinho.length && cupomAplicado) limparCupom('Produtos indisponíveis. O cupom foi removido.', 'err');
+      renderCarrinho();
+    }
+
+    var _debounceTimer = null;
+    function debouncedRenderProdutos() {
+      clearTimeout(_debounceTimer);
+      _debounceTimer = setTimeout(renderProdutos, 150);
+    }
+
+    function renderProdutos() {
+      var q = (document.getElementById('buscaProduto').value || '').toLowerCase();
+      var filtrados = produtos.filter(function(p) {
+        return !q || String(p.nome || '').toLowerCase().includes(q);
+      });
+      if (!filtrados.length) {
+        elProdutos.innerHTML = '<div class="cart-empty">Nenhum produto encontrado.</div>';
+        sincronizarCarrinhoComProdutos();
+        return;
+      }
+      elProdutos.innerHTML = filtrados.map(function(p) {
+        var imgHtml = p.imagem
+          ? '<img class="product-img" src="' + escapeHtml(p.imagem) + '" alt="' + escapeHtml(p.nome) + '">'
+          : '<div class="product-img-placeholder"><i class="ph ph-drop"></i></div>';
+        return '<article class="product">' +
+          imgHtml +
+          '<div><strong>' + escapeHtml(p.nome) + '</strong><div class="meta">Estoque: ' + p.estoque + '</div></div>' +
+          '<div class="price">' + dinheiro(p.preco) + '</div>' +
+          '<div class="product-actions">' +
+            '<input id="qtdProduto-' + p.id + '" type="number" min="1" max="' + p.estoque + '" value="1" aria-label="Quantidade de ' + escapeHtml(p.nome) + '">' +
+            '<button type="button" onclick="adicionarAoCarrinho(' + p.id + ')">Adicionar</button>' +
+          '</div>' +
+        '</article>';
+      }).join('');
+      sincronizarCarrinhoComProdutos();
+    }
+
+    function renderSkeletonProdutos() {
+      elProdutos.innerHTML = '<div class="cart-empty">Carregando produtos...</div>';
+    }
+
+    function limparCupom(mensagem, tipo) {
+      cupomAplicado = null;
+      var input = document.getElementById('cupomCodigo');
+      if (input) input.value = '';
+      var msg = document.getElementById('cupomMsg');
+      if (msg) {
+        msg.className = 'coupon-msg' + (tipo ? ' ' + tipo : '');
+        msg.textContent = mensagem || '';
+      }
+    }
+
+    async function aplicarCupom() {
+      var codigo = valor('cupomCodigo');
+      var msg = document.getElementById('cupomMsg');
+      if (!codigo) {
+        limparCupom();
+        atualizarTotal();
+        return;
+      }
+      if (!carrinho.length) {
+        msg.className = 'coupon-msg err';
+        msg.textContent = 'Adicione produtos antes de aplicar cupom.';
+        return;
+      }
+      var r;
+      try {
+        r = await fetch('/api/v1/site/cupons/' + encodeURIComponent(codigo) + '?total=' + encodeURIComponent(totalCarrinhoBruto()));
+      } catch (e) {
+        msg.className = 'coupon-msg err';
+        msg.textContent = 'Erro de conexão. Tente novamente.';
+        return;
+      }
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        cupomAplicado = null;
+        msg.className = 'coupon-msg err';
+        msg.textContent = json.detail || 'Cupom inválido.';
+        atualizarTotal();
+        return;
+      }
+      cupomAplicado = json.data;
+      atualizarTotal();
+    }
+
+    function aplicarConfiguracoesCliente(config) {
+      config = config || {};
+      var nomeLoja = config.nome_loja || 'ÁquaLog';
+      var subtitulo = config.subtitulo_loja || 'Pedido online da distribuidora';
+      var aviso = (config.aviso_cliente || '').trim();
+      configCliente = config;
+      document.title = nomeLoja + ' - Pedido';
+      document.getElementById('brandName').textContent = nomeLoja;
+      document.getElementById('brandSubtitle').textContent = subtitulo;
+      var avisoEl = document.getElementById('avisoCliente');
+      avisoEl.textContent = aviso;
+      avisoEl.classList.toggle('visible', !!aviso);
+      var botao = document.getElementById('btnConfirmarPedido');
+      var lojaFechada = config.loja_aberta === false;
+      if (botao && lojaFechada) {
+        botao.disabled = true;
+        botao.textContent = 'Loja fechada';
+      } else if (botao) {
+        botao.disabled = false;
+        botao.textContent = 'Confirmar pedido';
+      }
+      var avisoLoja = document.getElementById('avisoLojaFechada');
+      if (avisoLoja) {
+        avisoLoja.classList.toggle('visible', lojaFechada);
+      }
+      document.querySelectorAll('.product button').forEach(function(btn) {
+        btn.disabled = lojaFechada;
+      });
+    }
+
+    function atualizarAvisoLocalizacao(estado) {
+      var aviso = document.getElementById('geoPermissionNotice');
+      if (!aviso) return;
+      if (estado === 'ok') {
+        aviso.classList.add('hidden');
+        return;
+      }
+      aviso.classList.remove('hidden');
+      if (estado === 'negado') {
+        aviso.querySelector('span').textContent = 'Você negou a localização. Ative a permissão no navegador para melhorar o rastreamento da entrega.';
+      } else if (estado === 'indisponivel') {
+        aviso.querySelector('span').textContent = 'Este navegador não permite capturar localização. Você ainda pode informar o endereço manualmente.';
+      }
+    }
+
+    function capturarLocalizacaoCliente(forcarAviso) {
+      if (!navigator.geolocation) {
+        atualizarAvisoLocalizacao('indisponivel');
+        return;
+      }
+      var geoNegado = localStorage.getItem('aqualog_geo_negado');
+      if (geoNegado && !forcarAviso) {
+        atualizarAvisoLocalizacao('negado');
+        return;
+      }
+      if (forcarAviso) atualizarAvisoLocalizacao('pedir');
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        clienteGeoAtual = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude
+        };
+        localStorage.removeItem('aqualog_geo_negado');
+        atualizarAvisoLocalizacao('ok');
+      }, function(err) {
+        clienteGeoAtual = null;
+        if (err && err.code === err.PERMISSION_DENIED) {
+          localStorage.setItem('aqualog_geo_negado', '1');
+          atualizarAvisoLocalizacao('negado');
+        } else {
+          atualizarAvisoLocalizacao('pedir');
+        }
+      }, { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 });
+    }
+
+    function aplicarSugestaoEnderecoCliente(s) {
+      document.getElementById('endereco').value = s.endereco || '';
+      document.getElementById('bairro').value = s.bairro || '';
+      if (s.numero_casa && !document.getElementById('numeroCasa').value) {
+        document.getElementById('numeroCasa').value = s.numero_casa;
+      }
+      if (s.referencia && !document.getElementById('referencia').value) {
+        document.getElementById('referencia').value = s.referencia;
+      }
+      document.getElementById('enderecoSugestoes').classList.remove('ativo');
+    }
+
+    function renderSugestoesEnderecoCliente(lista) {
+      var box = document.getElementById('enderecoSugestoes');
+      if (!box) return;
+      if (!lista.length) {
+        box.innerHTML = '<div class="empty">Nenhum endereço salvo encontrado</div>';
+        box.classList.add('ativo');
+        return;
+      }
+      box.innerHTML = lista.map(function(s, i) {
+        return '<button type="button" data-index="' + i + '">' +
+          '<strong>' + escapeHtml(s.endereco || '') + '</strong>' +
+          '<span>' + escapeHtml([s.bairro, s.numero_casa ? 'Nº ' + s.numero_casa : '', s.cidade || s.referencia].filter(Boolean).join(' - ')) + '</span>' +
+        '</button>';
+      }).join('');
+      box.querySelectorAll('button').forEach(function(btn) {
+        btn.onclick = function() {
+          aplicarSugestaoEnderecoCliente(lista[Number(btn.dataset.index)]);
+        };
+      });
+      box.classList.add('ativo');
+    }
+
+    async function buscarSugestoesEnderecoCliente(termo) {
+      termo = String(termo || '').trim();
+      var box = document.getElementById('enderecoSugestoes');
+      if (termo.length < 2) {
+        box.classList.remove('ativo');
+        return;
+      }
+      box.innerHTML = '<div class="address-loading">Buscando...</div>';
+      box.classList.add('ativo');
+      var url = '/api/v1/site/enderecos/mapa-sugestoes?q=' + encodeURIComponent(termo);
+      if (clienteGeoAtual) {
+        url += '&lat=' + encodeURIComponent(clienteGeoAtual.latitude) + '&lon=' + encodeURIComponent(clienteGeoAtual.longitude);
+      }
+      try {
+        var r = await fetch(url);
+        var json = await r.json().catch(function() { return {}; });
+        renderSugestoesEnderecoCliente(json.data || []);
+      } catch (e) {
+        renderSugestoesEnderecoCliente([]);
+      }
+    }
+
+    function prepararAutocompleteEnderecoCliente() {
+      var input = document.getElementById('endereco');
+      var wrapper = document.getElementById('enderecoSuggestWrap');
+      var box = document.getElementById('enderecoSugestoes');
+      if (!input || !wrapper || !box) return;
+      input.addEventListener('focus', function() {
+        buscarSugestoesEnderecoCliente(input.value);
+      });
+      input.addEventListener('input', function() {
+        clearTimeout(timerEnderecoSugestao);
+        timerEnderecoSugestao = setTimeout(function() {
+          buscarSugestoesEnderecoCliente(input.value);
+        }, 220);
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          box.classList.remove('ativo');
+          return;
+        }
+        var botoes = box.querySelectorAll('button');
+        if (!botoes.length) return;
+        var atual = Array.from(botoes).indexOf(document.activeElement);
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          var proximo = atual < botoes.length - 1 ? atual + 1 : 0;
+          botoes[proximo].focus();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          var anterior = atual > 0 ? atual - 1 : botoes.length - 1;
+          botoes[anterior].focus();
+        }
+      });
+      document.addEventListener('click', function(e) {
+        if (!wrapper.contains(e.target)) {
+          box.classList.remove('ativo');
+        }
+      });
+    }
+
+    async function carregar() {
+      var cfg = await fetch('/api/v1/site/config').then(function(r) { return r.json(); }).catch(function() { return {}; });
+      aplicarConfiguracoesCliente(cfg.data || {});
+      pixChave = cfg.data && cfg.data.pix_chave ? cfg.data.pix_chave : '';
+      renderSkeletonProdutos();
+      try {
+        var r = await fetch('/api/v1/site/produtos');
+        if (!r.ok) throw new Error('Erro ao carregar produtos');
+        var json = await r.json();
+        produtos = json.data || [];
+      } catch (e) {
+        produtos = [];
+      }
+      renderProdutos();
+    }
+
+    var pollingProdutos = null;
+    var produtosVisiveis = false;
+    function iniciarPollingProdutos() {
+      if (pollingProdutos) return;
+      pollingProdutos = setInterval(async function() {
+        if (!produtosVisiveis) return;
+        try {
+          var r = await fetch('/api/v1/site/produtos');
+          if (!r.ok) return;
+          var json = await r.json();
+          var novos = json.data || [];
+          var novosStr = JSON.stringify(novos.map(function(p) { return { id: p.id, imagem: p.imagem }; }));
+          var antigosStr = JSON.stringify(produtos.map(function(p) { return { id: p.id, imagem: p.imagem }; }));
+          if (novosStr !== antigosStr) {
+            produtos = novos;
+            renderProdutos();
+          }
+        } catch (e) {}
+      }, 10000);
+    }
+    function pararPollingProdutos() {
+      if (pollingProdutos) { clearInterval(pollingProdutos); pollingProdutos = null; }
+    }
+
+    var pedidoEmEnvio = false;
+    var ultimoPedidoGerado = null;
+
+    function chavePedido(payload) {
+      return [
+        payload.telefone,
+        String(payload.endereco || '').trim().toLowerCase(),
+        String(payload.numero_casa || '').trim().toLowerCase(),
+        String(payload.bairro || '').trim().toLowerCase(),
+        (payload.itens || []).map(function(item) { return item.produto_id + ':' + item.quantidade; }).join(','),
+        String(payload.cupom_codigo || '').trim().toLowerCase(),
+        String(payload.forma_pagamento || '').trim().toLowerCase()
+      ].join('|');
+    }
+
+    function exibirPedidoCriado(data, payload, jaEstavaNaTela) {
+      var texto = 'Pedido #' + data.id + ' recebido. Total: ' + dinheiro(data.total) + '. Status: Recebido.';
+      if (data.reutilizado || jaEstavaNaTela) {
+        texto = 'Esse Pix já foi gerado para o Pedido #' + data.id + '. Use o QR Code abaixo para concluir o pagamento.';
+      }
+      if (data.data_criacao) {
+        texto += '\nCriado em: ' + formatarDataHora(data.data_criacao);
+      }
+      texto += '\nConfirmação: ' + confirmacaoTexto(data.confirmacao_status);
+      if (data.confirmacao_status === 'aguardando_confirmacao') {
+        texto += '\nA loja vai confirmar seu pedido antes de enviar o entregador.';
+      }
+      if (data.confirmacao_status === 'aguardando_pagamento') {
+        texto += '\nDepois que o Pix for confirmado pelo admin, o pedido é liberado para preparo e entrega.';
+      }
+      if (data.codigo_entrega) {
+        texto += '\nCódigo de entrega: ' + data.codigo_entrega + '\nPasse esse código ao entregador somente na hora de receber.';
+      }
+      if (payload.forma_pagamento === 'Pix' && !data.pix_copia_cola && pixChave) {
+        texto += '\n\nChave Pix: ' + pixChave + '\nEnvie o comprovante pelo Atendimento.';
+      }
+      mostrarMsg(elMsg, 'ok', texto);
+      elMsg.insertAdjacentHTML('beforeend', renderCodigoPedido(data));
+      if (payload.forma_pagamento === 'Pix') {
+        elMsg.insertAdjacentHTML('beforeend', renderPix(data));
+      }
+      document.getElementById('consultaId').value = data.id;
+      document.getElementById('consultaTelefone').value = payload.telefone;
+      salvarDadosCliente(payload);
+      salvarPedidoLocal(data, payload.telefone);
+      ativarSuporte(data.id, payload.telefone);
+      if (jaEstavaNaTela) {
+        var pixBox = elMsg.querySelector('.pix-box');
+        if (pixBox && typeof pixBox.scrollIntoView === 'function') {
+          pixBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    }
+
+    document.getElementById('formPedido').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (!carrinho.length) {
+        mostrarMsg(elMsg, 'err', 'Adicione pelo menos um produto ao carrinho.');
+        return;
+      }
+      if (valor('cupomCodigo') && !cupomAplicado) {
+        await aplicarCupom();
+        if (!cupomAplicado) return;
+      }
+
+      var payload = {
+        nome: valor('nome'),
+        telefone: limparTelefone(valor('telefone')),
+        email: valor('email') || null,
+        endereco: valor('endereco'),
+        numero_casa: valor('numeroCasa') || null,
+        bairro: valor('bairro'),
+        referencia: valor('referencia') || null,
+        itens: carrinho.map(function(item) {
+          return { produto_id: item.produto_id, quantidade: item.quantidade };
+        }),
+        forma_pagamento: valor('pagamento'),
+        cupom_codigo: cupomAplicado ? cupomAplicado.codigo : (valor('cupomCodigo') || null),
+        latitude: clienteGeoAtual ? clienteGeoAtual.latitude : null,
+        longitude: clienteGeoAtual ? clienteGeoAtual.longitude : null
+      };
+
+      var totalCarrinho = totalCarrinhoBruto();
+      var desconto = cupomAplicado ? (cupomAplicado.percentual_desconto || 0) : 0;
+      var totalFinal = totalCarrinho - (totalCarrinho * desconto / 100);
+      var msgConfirmacao = 'Confirmar pedido por ' + dinheiro(totalFinal) + '?';
+      if (cupomAplicado) {
+        msgConfirmacao += '\nCupom: ' + cupomAplicado.codigo + ' (-' + desconto + '%)';
+      }
+
+      siteMostrarConfirm('Confirmar pedido', msgConfirmacao, async function() {
+
+      var chaveAtual = chavePedido(payload);
+      if (ultimoPedidoGerado && ultimoPedidoGerado.chave === chaveAtual) {
+        exibirPedidoCriado(ultimoPedidoGerado.data, payload, true);
+        return;
+      }
+
+      if (pedidoEmEnvio) {
+        return;
+      }
+
+      var botao = document.getElementById('btnConfirmarPedido');
+      var textoBotao = botao ? botao.textContent : '';
+      pedidoEmEnvio = true;
+      if (botao) {
+        botao.disabled = true;
+        botao.textContent = 'Gerando Pix...';
+      }
+      try {
+        var r = await fetch('/api/v1/site/pedidos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        var json = await r.json().catch(function() { return {}; });
+        if (!r.ok || json.success === false) {
+          var msgErro = json.detail || json.error || 'Não foi possível criar o pedido.';
+          mostrarMsg(elMsg, 'err', msgErro + ' <button onclick="document.getElementById(\'formPedido\').dispatchEvent(new Event(\'submit\'))" style="margin-left:8px;padding:4px 10px;border:1px solid rgba(239,68,68,0.3);border-radius:6px;background:rgba(239,68,68,0.1);color:#fca5a5;cursor:pointer;font-weight:700">Tentar novamente</button>');
+          return;
+        }
+
+        var data = json.data;
+        ultimoPedidoGerado = { chave: chaveAtual, data: data };
+        exibirPedidoCriado(data, payload, false);
+        carrinho = [];
+        limparCupom();
+        renderCarrinho();
+        await carregar();
+      } finally {
+        pedidoEmEnvio = false;
+        if (botao) {
+          botao.disabled = false;
+          botao.textContent = textoBotao || 'Confirmar pedido';
+        }
+      }
+    });
+    });
+
+    function renderPedidoConsulta(p, tel, el) {
+      if (!p || !tel) {
+        return;
+      }
+      var texto = '';
+      if (p.pagamento_status === 'pago') {
+        texto += 'Pagamento concluído. Seu código de entrega está liberado abaixo.';
+      }
+      if (p.confirmacao_status === 'aguardando_confirmacao') {
+        texto += 'A loja ainda precisa confirmar antes de enviar o entregador.';
+      }
+      if (p.confirmacao_status === 'aguardando_pagamento') {
+        texto += 'A entrega só é liberada depois do Pix aprovado.';
+      }
+      mostrarMsg(el, 'ok', texto);
+      el.insertAdjacentHTML('afterbegin', renderResumoPedido(p));
+      el.insertAdjacentHTML('beforeend', renderAvisoRota(p));
+      el.insertAdjacentHTML('beforeend', renderCodigoPedido(p));
+      if (p.forma_pagamento === 'Pix' && p.pagamento_status !== 'pago') {
+        el.insertAdjacentHTML('beforeend', renderPix(p));
+      }
+      salvarPedidoLocal(p, tel);
+      ativarSuporte(p.id, tel);
+    }
+
+    async function consultarPedidoDireto(id, tel, opcoes) {
+      var el = document.getElementById('consultaMsg');
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(id) + '?telefone=' + encodeURIComponent(tel));
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        if (!opcoes || !opcoes.viaEvento) {
+          mostrarMsg(el, 'err', json.detail || 'Pedido não encontrado.');
+        }
+        return null;
+      }
+      var p = json.data;
+      renderPedidoConsulta(p, tel, el);
+      return p;
+    }
+
+    async function consultarPedido() {
+      var id = valor('consultaId');
+      var tel = limparTelefone(valor('consultaTelefone'));
+      var el = document.getElementById('consultaMsg');
+      if (!id || !tel) {
+        mostrarMsg(el, 'err', 'Informe número do pedido e telefone.');
+        return;
+      }
+      await consultarPedidoDireto(id, tel);
+    }
+
+    async function atualizarPagamentoCliente() {
+      if (!pedidoAtivo) return;
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(pedidoAtivo.id) + '/pagamento/atualizar?telefone=' + encodeURIComponent(pedidoAtivo.telefone), { method: 'POST' });
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        mostrarMsg(document.getElementById('consultaMsg'), 'err', json.detail || 'Não foi possível atualizar o pagamento.');
+        return;
+      }
+      consultarPedidoDireto(pedidoAtivo.id, pedidoAtivo.telefone);
+    }
+
+    async function carregarMensagensCliente(silencioso) {
+      if (!pedidoAtivo) return;
+      var box = document.getElementById('mensagensCliente');
+      if (!silencioso) box.innerHTML = '<div class="meta">Carregando...</div>';
+      var r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(pedidoAtivo.id) + '/suporte?telefone=' + encodeURIComponent(pedidoAtivo.telefone));
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        box.innerHTML = '<div class="meta">Não foi possível carregar a conversa.</div>';
+        return;
+      }
+      var mensagens = json.data || [];
+      if (!mensagens.length) {
+        box.innerHTML = '<div class="meta">Nenhuma mensagem ainda.</div>';
+        return;
+      }
+      box.innerHTML = mensagens.map(function(m) {
+        var autor = m.autor === 'admin' ? 'Atendimento' : 'Você';
+        return '<div class="support-msg-client ' + m.autor + '">' +
+          '<strong>' + autor + '</strong>' +
+          '<p>' + escapeHtml(m.mensagem) + '</p>' +
+          renderAnexoSuporteCliente(m) +
+          '<small>' + formatarDataHora(m.criado_em) + '</small>' +
+        '</div>';
+      }).join('');
+      var estavaNoFundo = box.scrollTop + box.clientHeight >= box.scrollHeight - 50;
+      if (estavaNoFundo || !silencioso) {
+        box.scrollTop = box.scrollHeight;
+      }
+    }
+
+    function renderAnexoSuporteCliente(m) {
+      if (!m || !m.arquivo_conteudo) return '';
+      var nome = escapeHtml(m.arquivo_nome || 'anexo');
+      var conteudo = String(m.arquivo_conteudo || '');
+      var href = escapeHtml(conteudo);
+      if (conteudo.indexOf('data:image/') === 0) {
+        return '<a class="support-attachment" href="' + href + '" target="_blank" rel="noreferrer">' +
+          '<img src="' + href + '" alt="' + nome + '">' +
+          '<span>' + nome + '</span>' +
+        '</a>';
+      }
+      return '<a class="support-attachment support-attachment-file" href="' + href + '" download="' + nome + '">Baixar ' + nome + '</a>';
+    }
+
+    function limparArquivoSelecionado() {
+      var input = document.getElementById('arquivoSuporteCliente');
+      var preview = document.getElementById('arquivoPreview');
+      if (input) input.value = '';
+      if (preview) preview.classList.add('hidden');
+    }
+
+    document.getElementById('arquivoSuporteCliente').addEventListener('change', function(e) {
+      var file = e.target.files && e.target.files[0];
+      var preview = document.getElementById('arquivoPreview');
+      var previewImg = document.getElementById('arquivoPreviewImg');
+      var previewNome = document.getElementById('arquivoPreviewNome');
+      if (!file) {
+        preview.classList.add('hidden');
+        return;
+      }
+      previewNome.textContent = file.name;
+      if (file.type.startsWith('image/')) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          previewImg.src = ev.target.result;
+          previewImg.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      } else {
+        previewImg.src = '';
+        previewImg.style.display = 'none';
+      }
+      preview.classList.remove('hidden');
+    });
+
+    async function enviarMensagemCliente() {
+      if (!pedidoAtivo) return;
+      var input = document.getElementById('mensagemCliente');
+      var arquivoInput = document.getElementById('arquivoSuporteCliente');
+      var mensagem = input.value.trim();
+      var arquivo = arquivoInput && arquivoInput.files && arquivoInput.files.length ? arquivoInput.files[0] : null;
+      var chatErro = document.getElementById('chatErro');
+      function mostrarChatErro(msg) {
+        if (chatErro) {
+          chatErro.textContent = msg;
+          chatErro.style.display = 'block';
+        }
+      }
+      if (!mensagem && !arquivo) return;
+      var payload = { mensagem: mensagem || 'Comprovante/anexo enviado.' };
+      if (arquivo) {
+        if (arquivo.size > 180000) {
+          mostrarChatErro('Use um arquivo menor para enviar no suporte.');
+          return;
+        }
+        payload.arquivo_nome = arquivo.name;
+        payload.arquivo_conteudo = await lerArquivoComoDataUrl(arquivo);
+      }
+      var r;
+      try {
+        r = await fetch('/api/v1/site/pedidos/' + encodeURIComponent(pedidoAtivo.id) + '/suporte?telefone=' + encodeURIComponent(pedidoAtivo.telefone), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        mostrarChatErro('Erro de conexão. Tente novamente.');
+        return;
+      }
+      var json = await r.json().catch(function() { return {}; });
+      if (!r.ok || json.success === false) {
+        mostrarChatErro(json.detail || 'Não foi possível enviar a mensagem.');
+        return;
+      }
+      if (chatErro) chatErro.style.display = 'none';
+      input.value = '';
+      limparArquivoSelecionado();
+      carregarMensagensCliente(true);
+    }
+
+    restaurarDadosCliente();
+    renderPedidosSalvos();
+    prepararAutocompleteEnderecoCliente();
+    capturarLocalizacaoCliente();
+    abrirModoCliente('inicio');
+    carregar();
+  </script>
+</body>
+</html>
