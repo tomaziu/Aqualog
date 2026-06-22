@@ -1286,6 +1286,7 @@
         <span id="brandSubtitle">Pedido online da distribuidora</span>
       </div>
     </div>
+    <a href="rastreamento.html" style="padding:6px 14px;border-radius:8px;background:rgba(6,182,212,.1);border:1px solid rgba(6,182,212,.2);color:#06b6d4;font-size:.85rem;font-weight:700;text-decoration:none;display:flex;align-items:center;gap:6px"><i class="ph ph-map-trifold"></i> Rastrear entrega</a>
   </header>
 
   <main class="layout">
@@ -1692,8 +1693,11 @@
       }
       box.innerHTML = pedidos.map(function(p) {
         var codigoResumo = p.codigo_entrega ? p.codigo_entrega : 'bloqueado';
+        var trackLink = p.status === 'saiu_para_entrega'
+          ? '<a href="rastreamento.html?entrega=' + encodeURIComponent(p.id) + '&telefone=' + encodeURIComponent(p.telefone) + '" target="_blank" onclick="event.stopPropagation()" style="color:#06b6d4;font-weight:700;text-decoration:none;margin-left:6px">Rastrear</a>'
+          : '';
         return '<button class="saved-order" type="button" data-id="' + p.id + '" data-telefone="' + escapeHtml(p.telefone) + '" onclick="abrirPedidoSalvo(Number(this.dataset.id), this.dataset.telefone)">' +
-          '<strong>Pedido #' + p.id + ' - ' + dinheiro(p.total) + '</strong>' +
+          '<strong>Pedido #' + p.id + ' - ' + dinheiro(p.total) + trackLink + '</strong>' +
           '<span>' + escapeHtml(p.produto || 'Pedido') + ' | ' + formatarDataHora(p.criado_em) + ' | ' + escapeHtml(confirmacaoTexto(p.confirmacao_status)) + ' | Código: ' + escapeHtml(codigoResumo) + '</span>' +
         '</button>';
       }).join('');
@@ -1910,10 +1914,12 @@
 
     function renderAvisoRota(pedido) {
       if (!pedido || pedido.status !== 'saiu_para_entrega') return '';
+      var trackUrl = 'rastreamento.html?entrega=' + encodeURIComponent(pedido.id) + '&telefone=' + encodeURIComponent(pedido.telefone || '');
       return '<div class="route-alert">' +
         '<div class="route-icon">&#10146;</div>' +
-        '<div><strong>Entregador a caminho</strong><span>Seu pedido já saiu e está indo para o endereço informado.</span></div>' +
-      '</div>';
+        '<div><strong>Entregador a caminho</strong><span>Seu pedido já saiu e está indo para o endereço informado.</span>' +
+        '<a href="' + trackUrl + '" target="_blank" style="display:inline-block;margin-top:8px;padding:6px 14px;border-radius:8px;background:linear-gradient(135deg,#06b6d4,#0891b2);color:#fff;font-size:.85rem;font-weight:700;text-decoration:none">Rastrear no mapa</a>' +
+        '</div></div>';
     }
 
     function renderResumoPedido(p) {

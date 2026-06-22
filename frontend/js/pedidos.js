@@ -231,6 +231,7 @@ function filtrarPedidos() {
           '<option value="">Alterar status</option>' +
           opcoesStatus(p) +
         '</select>' +
+        (p.status === 'saiu_para_entrega' ? '<a href="rastreamento.html?entrega=' + encodeURIComponent(p.id) + '&telefone=' + encodeURIComponent(p.telefone || '') + '" target="_blank" class="secondary-action" style="text-decoration:none;display:inline-flex;align-items:center">Rastrear</a>' : '') +
         '<button class="secondary-action" onclick="abrirHistoricoPedido(' + p.id + ')">Histórico</button>' +
         cancelarBotao +
         '<button class="delete" onclick="excluirPedido(' + p.id + ')">Excluir</button>' +
