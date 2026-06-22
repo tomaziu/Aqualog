@@ -71,6 +71,9 @@ async function carregarTudo() {
   if (typeof carregarSuporte === 'function') {
     await carregarSuporte();
   }
+  if (typeof carregarGpsAdmin === 'function' && $('gps') && $('gps').classList.contains('ativa')) {
+    iniciarGpsAdmin();
+  }
 }
 
 async function carregarDadosNovoPedido(pedidoId) {

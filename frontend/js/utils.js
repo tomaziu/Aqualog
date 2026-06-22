@@ -59,6 +59,11 @@ function mostrarTela(id, recarregar) {
       btn.classList.add('ativo');
     }
   });
+  if (id === 'gps' && typeof iniciarGpsAdmin === 'function') {
+    iniciarGpsAdmin();
+  } else if (typeof pararGpsAdmin === 'function') {
+    pararGpsAdmin();
+  }
   if (recarregar !== false) {
     carregarTudo();
   }

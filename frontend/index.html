@@ -95,6 +95,7 @@
       <button onclick="mostrarTela('entregadores')"><i class="ph ph-motorcycle"></i> Entregadores</button>
       <button onclick="mostrarTela('produtos')"><i class="ph ph-package"></i> Produtos</button>
       <button onclick="mostrarTela('pedidos')"><i class="ph ph-receipt"></i> Pedidos</button>
+      <button onclick="mostrarTela('gps')"><i class="ph ph-map-trifold"></i> GPS</button>
       <button onclick="mostrarTela('suporte')"><i class="ph ph-headset"></i> Suporte</button>
       <button onclick="mostrarTela('cupons')"><i class="ph ph-ticket"></i> Cupons</button>
       <button onclick="mostrarTela('configuracoes')"><i class="ph ph-gear"></i> Configurações</button>
@@ -294,6 +295,31 @@
       <div id="listaPedidos" class="orders-list"></div>
     </section>
 
+    <section id="gps" class="tela">
+      <div class="section-head">
+        <div>
+          <h2><i class="ph ph-map-trifold"></i> GPS / Rastreamento</h2>
+          <p>Acompanhe a localização dos entregadores e entregas em tempo real.</p>
+        </div>
+        <button class="secondary-action" onclick="carregarGpsAdmin()"><i class="ph ph-arrow-clockwise"></i> Atualizar</button>
+      </div>
+      <div class="gps-admin-layout">
+        <div id="adminTrackingMap" class="gps-admin-map">
+          <div class="tracking-map-empty">Carregando mapa...</div>
+        </div>
+        <aside class="gps-admin-sidebar">
+          <div class="gps-admin-stats">
+            <div class="gps-admin-stat"><span>Entregadores ativos</span><strong id="gpsEntregadoresAtivos">0</strong></div>
+            <div class="gps-admin-stat"><span>Em rota</span><strong id="gpsEmRota">0</strong></div>
+          </div>
+          <h3>Entregas ativas</h3>
+          <div id="gpsListaEntregas" class="gps-admin-list">
+            <div class="tracking-map-empty">Nenhuma entrega ativa no momento.</div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
     <section id="suporte" class="tela">
       <div class="section-head">
         <div>
@@ -445,6 +471,7 @@
   <script src="js/suporte.js"></script>
   <script src="js/cupons.js"></script>
   <script src="js/configuracoes.js"></script>
+  <script src="js/gps.js"></script>
   <script src="js/relatorio.js"></script>
   <script src="js/app.js"></script>
 </body>
