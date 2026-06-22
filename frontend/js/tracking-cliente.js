@@ -57,10 +57,7 @@ function renderClienteEntrega(e) {
 }
 
 function carregarLeafletCliente(callback) {
-  if (window.L) {
-    callback();
-    return;
-  }
+  if (window.L) { callback(); return; }
   if (!document.getElementById('leaflet-css')) {
     var css = document.createElement('link');
     css.id = 'leaflet-css';
@@ -80,26 +77,68 @@ function carregarLeafletCliente(callback) {
   }
 }
 
-function clienteIcone(nome) {
+function clienteIconeEntregador() {
   return L.divIcon({
     className: 'tracking-marker-wrap',
-    html: '<div class="tracking-marker tracking-marker-' + nome + '"></div>',
+    html: '<div class="gps-icon-entregador"><i class="ph ph-motorcycle"></i></div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
+  });
+}
+
+function clienteIconeCliente() {
+  return L.divIcon({
+    className: 'tracking-marker-wrap',
+    html: '<div class="gps-icon-cliente"><i class="ph ph-user"></i></div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
+  });
+}
+
+function clienteIconeDestino() {
+  return L.divIcon({
+    className: 'tracking-marker-wrap',
+    html: '<div class="tracking-marker tracking-marker-destino"></div>',
     iconSize: [26, 26],
     iconAnchor: [13, 13]
   });
 }
 
 function atualizarMarcadorCliente(nome, latLng, label) {
+  var icon;
+  if (nome === 'entregador') icon = clienteIconeEntregador();
+  else if (nome === 'cliente') icon = clienteIconeCliente();
+  else if (nome === 'destino') icon = clienteIconeDestino();
+  else icon = clienteIconeDestino();
+
   if (!clienteMarkers[nome]) {
-    clienteMarkers[nome] = L.marker(latLng, { icon: clienteIcone(nome), title: label }).addTo(clienteMap);
+    clienteMarkers[nome] = L.marker(latLng, { icon: icon, title: label }).addTo(clienteMap);
     clienteMarkers[nome].bindTooltip(label);
   } else {
     clienteMarkers[nome].setLatLng(latLng);
+    clienteMarkers[nome].setIcon(icon);
   }
 }
 
+async function desenharRotaCliente(lat1, lng1, lat2, lng2) {
+  if (clienteRoute) {
+    clienteMap.removeLayer(clienteRoute);
+    clienteRoute = null;
+  }
+  try {
+    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + lng1 + ',' + lat1 + ';' + lng2 + ',' + lat2 + '?overview=full&geometries=geojson');
+    var json = await r.json();
+    if (json.code === 'Ok' && json.routes && json.routes[0]) {
+      var rota = json.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+      clienteRoute = L.polyline(rota, { color: '#06b6d4', weight: 5, opacity: .9 }).addTo(clienteMap);
+      return;
+    }
+  } catch (err) {}
+  clienteRoute = L.polyline([[lat1, lng1], [lat2, lng2]], { color: '#06b6d4', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(clienteMap);
+}
+
 function desenharMapaCliente(e) {
-  carregarLeafletCliente(function() {
+  carregarLeafletCliente(async function() {
     var el = $('clienteTrackingMap');
     if (!clienteMap) {
       el.innerHTML = '';
@@ -109,47 +148,29 @@ function desenharMapaCliente(e) {
         attribution: '&copy; OpenStreetMap'
       }).addTo(clienteMap);
     }
-    atualizarMarcadorCliente('origem', [Number(e.origem_latitude), Number(e.origem_longitude)], 'Loja');
+
     atualizarMarcadorCliente('destino', [Number(e.destino_latitude), Number(e.destino_longitude)], 'Destino');
+
     if (e.entregador_latitude) {
       atualizarMarcadorCliente('entregador', [Number(e.entregador_latitude), Number(e.entregador_longitude)], 'Entregador');
     }
+
     if (e.cliente_atual_latitude) {
       atualizarMarcadorCliente('cliente', [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)], 'Você');
     }
-    var pontos = [
-      [Number(e.origem_latitude), Number(e.origem_longitude)],
-      e.entregador_latitude ? [Number(e.entregador_latitude), Number(e.entregador_longitude)] : null,
-      e.cliente_atual_latitude ? [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)] : null,
-      [Number(e.destino_latitude), Number(e.destino_longitude)]
-    ].filter(function(c) { return c && c[0] && c[1]; });
 
-    desenharRotaCliente(pontos);
-  });
-}
+    var latE = e.entregador_latitude ? Number(e.entregador_latitude) : null;
+    var lngE = e.entregador_longitude ? Number(e.entregador_longitude) : null;
+    var latC = e.cliente_atual_latitude ? Number(e.cliente_atual_latitude) : Number(e.destino_latitude);
+    var lngC = e.cliente_atual_latitude ? Number(e.cliente_atual_longitude) : Number(e.destino_longitude);
 
-async function desenharRotaCliente(pontos) {
-  if (clienteRoute) {
-    clienteMap.removeLayer(clienteRoute);
-    clienteRoute = null;
-  }
-  if (pontos.length < 2) return;
-  var coords = pontos.map(function(p) { return p[1] + ',' + p[0]; }).join(';');
-  try {
-    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson');
-    var json = await r.json();
-    if (json.code === 'Ok' && json.routes && json.routes[0]) {
-      var rota = json.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
-      clienteRoute = L.polyline(rota, { color: '#2563eb', weight: 5, opacity: .85 }).addTo(clienteMap);
+    if (latE && lngE) {
+      await desenharRotaCliente(latE, lngE, latC, lngC);
+      clienteMap.fitBounds(L.latLngBounds([[latE, lngE], [latC, lngC]]), { padding: [44, 44], maxZoom: 15 });
     } else {
-      clienteRoute = L.polyline(pontos, { color: '#2563eb', weight: 5, opacity: .82 }).addTo(clienteMap);
+      clienteMap.setView([latC, lngC], 15);
     }
-  } catch (err) {
-    clienteRoute = L.polyline(pontos, { color: '#2563eb', weight: 5, opacity: .82 }).addTo(clienteMap);
-  }
-  if (pontos.length) {
-    clienteMap.fitBounds(L.latLngBounds(pontos), { padding: [44, 44], maxZoom: 15 });
-  }
+  });
 }
 
 function iniciarClienteGps(deliveryId, telefone) {

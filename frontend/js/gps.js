@@ -24,12 +24,21 @@ function carregarLeafletAdmin(callback) {
   }
 }
 
-function adminMarkerIcon(cor) {
+function iconEntregador() {
   return L.divIcon({
     className: 'tracking-marker-wrap',
-    html: '<div class="tracking-marker" style="background:' + cor + ';box-shadow:0 2px 8px rgba(0,0,0,.4)"></div>',
-    iconSize: [26, 26],
-    iconAnchor: [13, 13]
+    html: '<div class="gps-icon-entregador"><i class="ph ph-motorcycle"></i></div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
+  });
+}
+
+function iconCliente() {
+  return L.divIcon({
+    className: 'tracking-marker-wrap',
+    html: '<div class="gps-icon-cliente"><i class="ph ph-user"></i></div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
   });
 }
 
@@ -46,11 +55,9 @@ function gpsStatusBadge(status) {
   return '<span class="gps-admin-badge ' + info[1] + '">' + info[0] + '</span>';
 }
 
-async function buscarRotaOSRM(pontos) {
-  if (pontos.length < 2) return null;
-  var coords = pontos.map(function(p) { return p[1] + ',' + p[0]; }).join(';');
+async function buscarRotaOSRM(lat1, lng1, lat2, lng2) {
   try {
-    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson');
+    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + lng1 + ',' + lat1 + ';' + lng2 + ',' + lat2 + '?overview=full&geometries=geojson');
     var json = await r.json();
     if (json.code === 'Ok' && json.routes && json.routes[0]) {
       return json.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
@@ -59,15 +66,16 @@ async function buscarRotaOSRM(pontos) {
   return null;
 }
 
-async function desenharRotaReal(entregaId, pontos) {
+async function desenharRotaEntrega(entregaId, lat1, lng1, lat2, lng2) {
   if (adminRoutes[entregaId]) {
     adminMap.removeLayer(adminRoutes[entregaId]);
+    delete adminRoutes[entregaId];
   }
-  var rotaReal = await buscarRotaOSRM(pontos);
+  var rotaReal = await buscarRotaOSRM(lat1, lng1, lat2, lng2);
   if (rotaReal) {
-    adminRoutes[entregaId] = L.polyline(rotaReal, { color: '#2563eb', weight: 5, opacity: .85 }).addTo(adminMap);
+    adminRoutes[entregaId] = L.polyline(rotaReal, { color: '#06b6d4', weight: 5, opacity: .9 }).addTo(adminMap);
   } else {
-    adminRoutes[entregaId] = L.polyline(pontos, { color: '#2563eb', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(adminMap);
+    adminRoutes[entregaId] = L.polyline([[lat1, lng1], [lat2, lng2]], { color: '#06b6d4', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(adminMap);
   }
 }
 
@@ -84,7 +92,7 @@ async function carregarGpsAdmin() {
     Array.isArray(dados4) ? dados4 : []
   );
 
-  var comLocalizacao = entregas.filter(function(e) {
+  var comEntregador = entregas.filter(function(e) {
     return e.entregador_latitude && e.entregador_longitude;
   });
 
@@ -92,7 +100,7 @@ async function carregarGpsAdmin() {
     return e.status === 'em_rota' || e.status === 'proximo_destino';
   }).length;
 
-  var entregadoresAtivos = new Set(comLocalizacao.map(function(e) { return e.entregador_id; })).size;
+  var entregadoresAtivos = new Set(comEntregador.map(function(e) { return e.entregador_id; })).size;
 
   $('gpsEntregadoresAtivos').textContent = entregadoresAtivos;
   $('gpsEmRota').textContent = emRota;
@@ -112,65 +120,66 @@ async function carregarGpsAdmin() {
       setTimeout(function() { adminMap.invalidateSize(); }, 100);
     }
 
-    var novosIds = {};
-    comLocalizacao.forEach(function(e) {
-      novosIds[e.id] = true;
-      var lat = Number(e.entregador_latitude);
-      var lng = Number(e.entregador_longitude);
-      var cor = e.status === 'em_rota' || e.status === 'proximo_destino' ? '#f59e0b' : '#06b6d4';
-      var label = '#' + e.id + ' - ' + (e.entregador_nome || 'Entregador');
+    var novosEntregador = {};
+    var novosCliente = {};
 
+    comEntregador.forEach(function(e) {
+      var latE = Number(e.entregador_latitude);
+      var lngE = Number(e.entregador_longitude);
+      var labelE = (e.entregador_nome || 'Entregador') + ' #' + e.id;
+
+      novosEntregador[e.id] = true;
       if (!adminMarkers['entregador_' + e.id]) {
-        adminMarkers['entregador_' + e.id] = L.marker([lat, lng], { icon: adminMarkerIcon(cor), title: label }).addTo(adminMap);
-        adminMarkers['entregador_' + e.id].bindPopup('<strong>' + label + '</strong><br>' + (e.destino_endereco || '') + '<br>' + gpsStatusBadge(e.status));
+        adminMarkers['entregador_' + e.id] = L.marker([latE, lngE], { icon: iconEntregador(), title: labelE }).addTo(adminMap);
+        adminMarkers['entregador_' + e.id].bindPopup('<strong><i class="ph ph-motorcycle"></i> ' + labelE + '</strong><br>' + (e.entregador_veiculo || '') + '<br>' + gpsStatusBadge(e.status));
       } else {
-        adminMarkers['entregador_' + e.id].setLatLng([lat, lng]);
-        adminMarkers['entregador_' + e.id].setIcon(adminMarkerIcon(cor));
-        adminMarkers['entregador_' + e.id].setPopupContent('<strong>' + label + '</strong><br>' + (e.destino_endereco || '') + '<br>' + gpsStatusBadge(e.status));
+        adminMarkers['entregador_' + e.id].setLatLng([latE, lngE]);
+        adminMarkers['entregador_' + e.id].setPopupContent('<strong><i class="ph ph-motorcycle"></i> ' + labelE + '</strong><br>' + (e.entregador_veiculo || '') + '<br>' + gpsStatusBadge(e.status));
       }
 
-      if (e.cliente_atual_latitude && e.cliente_atual_longitude) {
-        var cliLat = Number(e.cliente_atual_latitude);
-        var cliLng = Number(e.cliente_atual_longitude);
-        var cliLabel = 'Cliente - ' + (e.cliente_nome || '');
-        if (!adminMarkers['cliente_' + e.id]) {
-          adminMarkers['cliente_' + e.id] = L.marker([cliLat, cliLng], { icon: adminMarkerIcon('#10b981'), title: cliLabel }).addTo(adminMap);
-          adminMarkers['cliente_' + e.id].bindPopup('<strong>' + cliLabel + '</strong><br>' + (e.destino_endereco || ''));
-        } else {
-          adminMarkers['cliente_' + e.id].setLatLng([cliLat, cliLng]);
-        }
+      var latC = e.cliente_atual_latitude ? Number(e.cliente_atual_latitude) : Number(e.destino_latitude);
+      var lngC = e.cliente_atual_latitude ? Number(e.cliente_atual_longitude) : Number(e.destino_longitude);
+      var labelC = (e.cliente_nome || 'Cliente');
+
+      novosCliente[e.id] = true;
+      if (!adminMarkers['cliente_' + e.id]) {
+        adminMarkers['cliente_' + e.id] = L.marker([latC, lngC], { icon: iconCliente(), title: labelC }).addTo(adminMap);
+        adminMarkers['cliente_' + e.id].bindPopup('<strong><i class="ph ph-user"></i> ' + labelC + '</strong><br>' + (e.destino_endereco || ''));
+      } else {
+        adminMarkers['cliente_' + e.id].setLatLng([latC, lngC]);
+        adminMarkers['cliente_' + e.id].setPopupContent('<strong><i class="ph ph-user"></i> ' + labelC + '</strong><br>' + (e.destino_endereco || ''));
       }
 
-      var pontos = [
-        [Number(e.origem_latitude), Number(e.origem_longitude)],
-        [lat, lng],
-        e.cliente_atual_latitude ? [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)] : null,
-        [Number(e.destino_latitude), Number(e.destino_longitude)]
-      ].filter(function(c) { return c && c[0] && c[1]; });
-
-      desenharRotaReal(e.id, pontos);
+      desenharRotaEntrega(e.id, latE, lngE, latC, lngC);
     });
 
     Object.keys(adminMarkers).forEach(function(key) {
       var parts = key.split('_');
+      var tipo = parts[0];
       var id = parseInt(parts[parts.length - 1]);
-      if (!novosIds[id]) {
+      if (tipo === 'entregador' && !novosEntregador[id]) {
+        adminMap.removeLayer(adminMarkers[key]);
+        delete adminMarkers[key];
+      }
+      if (tipo === 'cliente' && !novosCliente[id]) {
         adminMap.removeLayer(adminMarkers[key]);
         delete adminMarkers[key];
       }
     });
     Object.keys(adminRoutes).forEach(function(id) {
-      if (!novosIds[id]) {
+      if (!novosEntregador[id]) {
         adminMap.removeLayer(adminRoutes[id]);
         delete adminRoutes[id];
       }
     });
 
-    if (comLocalizacao.length) {
+    if (comEntregador.length) {
       var allCoords = [];
-      comLocalizacao.forEach(function(e) {
-        if (e.entregador_latitude) allCoords.push([Number(e.entregador_latitude), Number(e.entregador_longitude)]);
-        if (e.cliente_atual_latitude) allCoords.push([Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)]);
+      comEntregador.forEach(function(e) {
+        allCoords.push([Number(e.entregador_latitude), Number(e.entregador_longitude)]);
+        var latC = e.cliente_atual_latitude ? Number(e.cliente_atual_latitude) : Number(e.destino_latitude);
+        var lngC = e.cliente_atual_latitude ? Number(e.cliente_atual_longitude) : Number(e.destino_longitude);
+        allCoords.push([latC, lngC]);
       });
       if (allCoords.length) {
         adminMap.fitBounds(L.latLngBounds(allCoords), { padding: [50, 50], maxZoom: 15 });
