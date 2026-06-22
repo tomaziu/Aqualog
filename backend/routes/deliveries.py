@@ -554,3 +554,20 @@ def limpar_entregas_antiguas(admin=Depends(get_admin_user)):
     finally:
         cur.close()
         con.close()
+
+
+@router.delete('/deliveries/{delivery_id}')
+def deletar_entrega(delivery_id: int, admin=Depends(get_admin_user)):
+    con = get_connection()
+    cur = con.cursor(dictionary=True)
+    try:
+        cur.execute('DELETE FROM delivery_locations WHERE delivery_id=%s', (delivery_id,))
+        cur.execute('DELETE FROM delivery_status_history WHERE delivery_id=%s', (delivery_id,))
+        cur.execute('DELETE FROM deliveries WHERE id=%s', (delivery_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(404, 'Entrega não encontrada')
+        con.commit()
+        return {'success': True, 'data': {'mensagem': 'Entrega removida'}}
+    finally:
+        cur.close()
+        con.close()

@@ -46,6 +46,31 @@ function gpsStatusBadge(status) {
   return '<span class="gps-admin-badge ' + info[1] + '">' + info[0] + '</span>';
 }
 
+async function buscarRotaOSRM(pontos) {
+  if (pontos.length < 2) return null;
+  var coords = pontos.map(function(p) { return p[1] + ',' + p[0]; }).join(';');
+  try {
+    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson');
+    var json = await r.json();
+    if (json.code === 'Ok' && json.routes && json.routes[0]) {
+      return json.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+    }
+  } catch (e) {}
+  return null;
+}
+
+async function desenharRotaReal(entregaId, pontos) {
+  if (adminRoutes[entregaId]) {
+    adminMap.removeLayer(adminRoutes[entregaId]);
+  }
+  var rotaReal = await buscarRotaOSRM(pontos);
+  if (rotaReal) {
+    adminRoutes[entregaId] = L.polyline(rotaReal, { color: '#2563eb', weight: 5, opacity: .85 }).addTo(adminMap);
+  } else {
+    adminRoutes[entregaId] = L.polyline(pontos, { color: '#2563eb', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(adminMap);
+  }
+}
+
 async function carregarGpsAdmin() {
   var dados1 = await apiGet('/deliveries?status=aguardando_coleta');
   var dados2 = await apiGet('/deliveries?status=coletado');
@@ -116,22 +141,19 @@ async function carregarGpsAdmin() {
         }
       }
 
-      var coords = [
+      var pontos = [
         [Number(e.origem_latitude), Number(e.origem_longitude)],
         [lat, lng],
         e.cliente_atual_latitude ? [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)] : null,
         [Number(e.destino_latitude), Number(e.destino_longitude)]
       ].filter(function(c) { return c && c[0] && c[1]; });
 
-      if (!adminRoutes[e.id]) {
-        adminRoutes[e.id] = L.polyline(coords, { color: '#2563eb', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(adminMap);
-      } else {
-        adminRoutes[e.id].setLatLngs(coords);
-      }
+      desenharRotaReal(e.id, pontos);
     });
 
     Object.keys(adminMarkers).forEach(function(key) {
-      var id = key.split('_')[1];
+      var parts = key.split('_');
+      var id = parseInt(parts[parts.length - 1]);
       if (!novosIds[id]) {
         adminMap.removeLayer(adminMarkers[key]);
         delete adminMarkers[key];
@@ -167,6 +189,7 @@ async function carregarGpsAdmin() {
     var latFoco = e.entregador_latitude || e.cliente_atual_latitude || e.destino_latitude;
     var lngFoco = e.entregador_longitude || e.cliente_atual_longitude || e.destino_longitude;
     return '<div class="gps-admin-card" onclick="focarEntregaAdmin(' + e.id + ', ' + Number(latFoco) + ', ' + Number(lngFoco) + ')">' +
+      '<button class="gps-admin-delete" onclick="event.stopPropagation();deletarEntregaGps(' + e.id + ')" title="Remover rastreamento">&times;</button>' +
       '<strong>#' + e.id + ' - ' + escapeHtml(e.cliente_nome || '') + '</strong>' +
       '<span>' + escapeHtml(e.entregador_nome || 'Sem entregador') + ' | ' + escapeHtml(e.entregador_veiculo || '') + '</span>' +
       '<span><i class="ph ph-motorcycle"></i> Entregador: ' + temGpsEntregador + ' | <i class="ph ph-user"></i> Cliente: ' + temGpsCliente + '</span>' +
@@ -183,6 +206,19 @@ function focarEntregaAdmin(id, lat, lng) {
   } else if (adminMarkers['cliente_' + id]) {
     adminMarkers['cliente_' + id].openPopup();
   }
+}
+
+async function deletarEntregaGps(id) {
+  mostrarConfirm('Remover rastreamento', 'Removerá o rastreamento da entrega #' + id + ' do mapa. Continuar?', async function() {
+    var r = await apiSend('/deliveries/' + id, 'DELETE');
+    if (r) {
+      if (adminMarkers['entregador_' + id]) { adminMap.removeLayer(adminMarkers['entregador_' + id]); delete adminMarkers['entregador_' + id]; }
+      if (adminMarkers['cliente_' + id]) { adminMap.removeLayer(adminMarkers['cliente_' + id]); delete adminMarkers['cliente_' + id]; }
+      if (adminRoutes[id]) { adminMap.removeLayer(adminRoutes[id]); delete adminRoutes[id]; }
+      mostrarToast('sucesso', 'Entrega #' + id + ' removida do mapa.');
+      carregarGpsAdmin();
+    }
+  });
 }
 
 function iniciarGpsAdmin() {

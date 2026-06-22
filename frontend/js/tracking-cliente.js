@@ -117,21 +117,39 @@ function desenharMapaCliente(e) {
     if (e.cliente_atual_latitude) {
       atualizarMarcadorCliente('cliente', [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)], 'Você');
     }
-    var coords = [
+    var pontos = [
       [Number(e.origem_latitude), Number(e.origem_longitude)],
       e.entregador_latitude ? [Number(e.entregador_latitude), Number(e.entregador_longitude)] : null,
       e.cliente_atual_latitude ? [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)] : null,
       [Number(e.destino_latitude), Number(e.destino_longitude)]
     ].filter(function(c) { return c && c[0] && c[1]; });
-    if (!clienteRoute) {
-      clienteRoute = L.polyline(coords, { color: '#2563eb', weight: 5, opacity: .82 }).addTo(clienteMap);
-    } else {
-      clienteRoute.setLatLngs(coords);
-    }
-    if (coords.length) {
-      clienteMap.fitBounds(L.latLngBounds(coords), { padding: [44, 44], maxZoom: 15 });
-    }
+
+    desenharRotaCliente(pontos);
   });
+}
+
+async function desenharRotaCliente(pontos) {
+  if (clienteRoute) {
+    clienteMap.removeLayer(clienteRoute);
+    clienteRoute = null;
+  }
+  if (pontos.length < 2) return;
+  var coords = pontos.map(function(p) { return p[1] + ',' + p[0]; }).join(';');
+  try {
+    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + coords + '?overview=full&geometries=geojson');
+    var json = await r.json();
+    if (json.code === 'Ok' && json.routes && json.routes[0]) {
+      var rota = json.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+      clienteRoute = L.polyline(rota, { color: '#2563eb', weight: 5, opacity: .85 }).addTo(clienteMap);
+    } else {
+      clienteRoute = L.polyline(pontos, { color: '#2563eb', weight: 5, opacity: .82 }).addTo(clienteMap);
+    }
+  } catch (err) {
+    clienteRoute = L.polyline(pontos, { color: '#2563eb', weight: 5, opacity: .82 }).addTo(clienteMap);
+  }
+  if (pontos.length) {
+    clienteMap.fitBounds(L.latLngBounds(pontos), { padding: [44, 44], maxZoom: 15 });
+  }
 }
 
 function iniciarClienteGps(deliveryId, telefone) {
