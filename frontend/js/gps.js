@@ -1,5 +1,6 @@
 var adminMap = null;
 var adminMarkers = {};
+var adminRoutes = {};
 var adminGpsIntervalo = null;
 
 function carregarLeafletAdmin(callback) {
@@ -54,6 +55,30 @@ function gpsStatusBadge(status) {
   return '<span class="gps-admin-badge ' + info[1] + '">' + info[0] + '</span>';
 }
 
+async function buscarRotaOSRM(lat1, lng1, lat2, lng2) {
+  try {
+    var r = await fetch('https://router.project-osrm.org/route/v1/driving/' + lng1 + ',' + lat1 + ';' + lng2 + ',' + lat2 + '?overview=full&geometries=geojson');
+    var json = await r.json();
+    if (json.code === 'Ok' && json.routes && json.routes[0]) {
+      return json.routes[0].geometry.coordinates.map(function(c) { return [c[1], c[0]]; });
+    }
+  } catch (e) {}
+  return null;
+}
+
+async function desenharRotaAdmin(entregaId, lat1, lng1, lat2, lng2) {
+  if (adminRoutes[entregaId]) {
+    adminMap.removeLayer(adminRoutes[entregaId]);
+    delete adminRoutes[entregaId];
+  }
+  var rota = await buscarRotaOSRM(lat1, lng1, lat2, lng2);
+  if (rota) {
+    adminRoutes[entregaId] = L.polyline(rota, { color: '#06b6d4', weight: 5, opacity: .9 }).addTo(adminMap);
+  } else {
+    adminRoutes[entregaId] = L.polyline([[lat1, lng1], [lat2, lng2]], { color: '#06b6d4', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(adminMap);
+  }
+}
+
 async function carregarGpsAdmin() {
   var d1 = await apiGet('/deliveries?status=aguardando_coleta');
   var d2 = await apiGet('/deliveries?status=coletado');
@@ -67,10 +92,10 @@ async function carregarGpsAdmin() {
     Array.isArray(d4) ? d4 : []
   );
 
-  var comEntregador = entregas.filter(function(e) { return e.entregador_latitude && e.entregador_longitude; });
+  var comGPS = entregas.filter(function(e) { return e.entregador_latitude && e.entregador_longitude; });
 
   var emRota = entregas.filter(function(e) { return e.status === 'em_rota' || e.status === 'proximo_destino'; }).length;
-  var entregadoresAtivos = new Set(comEntregador.map(function(e) { return e.entregador_id; })).size;
+  var entregadoresAtivos = new Set(comGPS.map(function(e) { return e.entregador_id; })).size;
 
   $('gpsEntregadoresAtivos').textContent = entregadoresAtivos;
   $('gpsEmRota').textContent = emRota;
@@ -92,7 +117,7 @@ async function carregarGpsAdmin() {
 
     var ativos = {};
 
-    comEntregador.forEach(function(e) {
+    comGPS.forEach(function(e) {
       ativos[e.id] = true;
       var latE = Number(e.entregador_latitude);
       var lngE = Number(e.entregador_longitude);
@@ -115,6 +140,8 @@ async function carregarGpsAdmin() {
       } else {
         adminMarkers['c_' + e.id].setLatLng([latC, lngC]);
       }
+
+      desenharRotaAdmin(e.id, latE, lngE, latC, lngC);
     });
 
     Object.keys(adminMarkers).forEach(function(key) {
@@ -124,10 +151,16 @@ async function carregarGpsAdmin() {
         delete adminMarkers[key];
       }
     });
+    Object.keys(adminRoutes).forEach(function(id) {
+      if (!ativos[id]) {
+        adminMap.removeLayer(adminRoutes[id]);
+        delete adminRoutes[id];
+      }
+    });
 
-    if (comEntregador.length) {
+    if (comGPS.length) {
       var allCoords = [];
-      comEntregador.forEach(function(e) {
+      comGPS.forEach(function(e) {
         allCoords.push([Number(e.entregador_latitude), Number(e.entregador_longitude)]);
         var latC = e.cliente_atual_latitude ? Number(e.cliente_atual_latitude) : Number(e.destino_latitude);
         var lngC = e.cliente_atual_longitude ? Number(e.cliente_atual_longitude) : Number(e.destino_longitude);
@@ -172,6 +205,7 @@ async function deletarEntregaGps(id) {
     if (r) {
       if (adminMarkers['e_' + id]) { adminMap.removeLayer(adminMarkers['e_' + id]); delete adminMarkers['e_' + id]; }
       if (adminMarkers['c_' + id]) { adminMap.removeLayer(adminMarkers['c_' + id]); delete adminMarkers['c_' + id]; }
+      if (adminRoutes[id]) { adminMap.removeLayer(adminRoutes[id]); delete adminRoutes[id]; }
       mostrarToast('sucesso', 'Entrega #' + id + ' removida.');
       carregarGpsAdmin();
     }
