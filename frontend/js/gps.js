@@ -76,11 +76,15 @@ async function carregarGpsAdmin() {
     var el = $('adminTrackingMap');
     if (!adminMap) {
       el.innerHTML = '';
-      adminMap = L.map('adminTrackingMap').setView([-3.5, -43.5], 13);
+      el.style.height = '520px';
+      adminMap = L.map('adminTrackingMap', { zoomControl: true }).setView([-3.5, -43.5], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap'
       }).addTo(adminMap);
+      setTimeout(function() { adminMap.invalidateSize(); }, 200);
+    } else {
+      setTimeout(function() { adminMap.invalidateSize(); }, 100);
     }
 
     var novosIds = {};

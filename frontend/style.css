@@ -222,6 +222,7 @@ main {
   min-width: 0;
   width: auto;
   max-width: 1440px;
+  overflow-x: hidden;
 }
 
 .tela {
@@ -2668,6 +2669,8 @@ main table td {
   grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
   gap: 16px;
   min-height: 520px;
+  max-height: calc(100vh - 180px);
+  min-width: 0;
 }
 .gps-admin-map {
   border-radius: var(--raio-md);
@@ -2675,6 +2678,9 @@ main table td {
   background: var(--branco);
   border: 1px solid var(--borda);
   min-height: 520px;
+  position: relative;
+  z-index: 1;
+  min-width: 0;
 }
 .gps-admin-sidebar {
   background: var(--branco);
@@ -2685,6 +2691,9 @@ main table td {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
 }
 .gps-admin-sidebar h3 {
   margin: 8px 0 0;
