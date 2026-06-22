@@ -95,20 +95,33 @@ async function carregarGpsAdmin() {
       var cor = e.status === 'em_rota' || e.status === 'proximo_destino' ? '#f59e0b' : '#06b6d4';
       var label = '#' + e.id + ' - ' + (e.entregador_nome || 'Entregador');
 
-      if (!adminMarkers[e.id]) {
-        adminMarkers[e.id] = L.marker([lat, lng], { icon: adminMarkerIcon(cor), title: label }).addTo(adminMap);
-        adminMarkers[e.id].bindPopup('<strong>' + label + '</strong><br>' + (e.destino_endereco || '') + '<br>' + gpsStatusBadge(e.status));
+      if (!adminMarkers['entregador_' + e.id]) {
+        adminMarkers['entregador_' + e.id] = L.marker([lat, lng], { icon: adminMarkerIcon(cor), title: label }).addTo(adminMap);
+        adminMarkers['entregador_' + e.id].bindPopup('<strong>' + label + '</strong><br>' + (e.destino_endereco || '') + '<br>' + gpsStatusBadge(e.status));
       } else {
-        adminMarkers[e.id].setLatLng([lat, lng]);
-        adminMarkers[e.id].setIcon(adminMarkerIcon(cor));
-        adminMarkers[e.id].setPopupContent('<strong>' + label + '</strong><br>' + (e.destino_endereco || '') + '<br>' + gpsStatusBadge(e.status));
+        adminMarkers['entregador_' + e.id].setLatLng([lat, lng]);
+        adminMarkers['entregador_' + e.id].setIcon(adminMarkerIcon(cor));
+        adminMarkers['entregador_' + e.id].setPopupContent('<strong>' + label + '</strong><br>' + (e.destino_endereco || '') + '<br>' + gpsStatusBadge(e.status));
+      }
+
+      if (e.cliente_atual_latitude && e.cliente_atual_longitude) {
+        var cliLat = Number(e.cliente_atual_latitude);
+        var cliLng = Number(e.cliente_atual_longitude);
+        var cliLabel = 'Cliente - ' + (e.cliente_nome || '');
+        if (!adminMarkers['cliente_' + e.id]) {
+          adminMarkers['cliente_' + e.id] = L.marker([cliLat, cliLng], { icon: adminMarkerIcon('#10b981'), title: cliLabel }).addTo(adminMap);
+          adminMarkers['cliente_' + e.id].bindPopup('<strong>' + cliLabel + '</strong><br>' + (e.destino_endereco || ''));
+        } else {
+          adminMarkers['cliente_' + e.id].setLatLng([cliLat, cliLng]);
+        }
       }
 
       var coords = [
         [Number(e.origem_latitude), Number(e.origem_longitude)],
         [lat, lng],
+        e.cliente_atual_latitude ? [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)] : null,
         [Number(e.destino_latitude), Number(e.destino_longitude)]
-      ].filter(function(c) { return c[0] && c[1]; });
+      ].filter(function(c) { return c && c[0] && c[1]; });
 
       if (!adminRoutes[e.id]) {
         adminRoutes[e.id] = L.polyline(coords, { color: '#2563eb', weight: 4, opacity: .7, dashArray: '8,6' }).addTo(adminMap);
@@ -117,22 +130,29 @@ async function carregarGpsAdmin() {
       }
     });
 
-    Object.keys(adminMarkers).forEach(function(id) {
+    Object.keys(adminMarkers).forEach(function(key) {
+      var id = key.split('_')[1];
       if (!novosIds[id]) {
-        adminMap.removeLayer(adminMarkers[id]);
-        delete adminMarkers[id];
+        adminMap.removeLayer(adminMarkers[key]);
+        delete adminMarkers[key];
       }
-      if (!novosIds[id] && adminRoutes[id]) {
+    });
+    Object.keys(adminRoutes).forEach(function(id) {
+      if (!novosIds[id]) {
         adminMap.removeLayer(adminRoutes[id]);
         delete adminRoutes[id];
       }
     });
 
     if (comLocalizacao.length) {
-      var bounds = L.latLngBounds(comLocalizacao.map(function(e) {
-        return [Number(e.entregador_latitude), Number(e.entregador_longitude)];
-      }));
-      adminMap.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+      var allCoords = [];
+      comLocalizacao.forEach(function(e) {
+        if (e.entregador_latitude) allCoords.push([Number(e.entregador_latitude), Number(e.entregador_longitude)]);
+        if (e.cliente_atual_latitude) allCoords.push([Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)]);
+      });
+      if (allCoords.length) {
+        adminMap.fitBounds(L.latLngBounds(allCoords), { padding: [50, 50], maxZoom: 15 });
+      }
     }
   });
 
@@ -142,12 +162,14 @@ async function carregarGpsAdmin() {
     return;
   }
   lista.innerHTML = entregas.map(function(e) {
-    var endereco = [e.destino_endereco, e.destino_latitude ? '(' + Number(e.destino_latitude).toFixed(4) + ', ' + Number(e.destino_longitude).toFixed(4) + ')' : ''].filter(Boolean).join(' ');
-    var temGps = e.entregador_latitude ? 'Sim' : 'Não';
-    return '<div class="gps-admin-card" onclick="focarEntregaAdmin(' + e.id + ', ' + Number(e.entregador_latitude || e.destino_latitude) + ', ' + Number(e.entregador_longitude || e.destino_longitude) + ')">' +
-      '<strong>#' + e.id + ' - ' + escapeHtml(e.entregador_nome || 'Sem entregador') + '</strong>' +
-      '<span>' + escapeHtml(e.cliente_nome || '') + ' | ' + escapeHtml(e.entregador_veiculo || '') + '</span>' +
-      '<span>GPS: ' + temGps + '</span>' +
+    var temGpsEntregador = e.entregador_latitude ? 'Sim' : 'Não';
+    var temGpsCliente = e.cliente_atual_latitude ? 'Sim' : 'Não';
+    var latFoco = e.entregador_latitude || e.cliente_atual_latitude || e.destino_latitude;
+    var lngFoco = e.entregador_longitude || e.cliente_atual_longitude || e.destino_longitude;
+    return '<div class="gps-admin-card" onclick="focarEntregaAdmin(' + e.id + ', ' + Number(latFoco) + ', ' + Number(lngFoco) + ')">' +
+      '<strong>#' + e.id + ' - ' + escapeHtml(e.cliente_nome || '') + '</strong>' +
+      '<span>' + escapeHtml(e.entregador_nome || 'Sem entregador') + ' | ' + escapeHtml(e.entregador_veiculo || '') + '</span>' +
+      '<span><i class="ph ph-motorcycle"></i> Entregador: ' + temGpsEntregador + ' | <i class="ph ph-user"></i> Cliente: ' + temGpsCliente + '</span>' +
       gpsStatusBadge(e.status) +
     '</div>';
   }).join('');
@@ -156,8 +178,10 @@ async function carregarGpsAdmin() {
 function focarEntregaAdmin(id, lat, lng) {
   if (!adminMap || !lat || !lng) return;
   adminMap.setView([lat, lng], 16);
-  if (adminMarkers[id]) {
-    adminMarkers[id].openPopup();
+  if (adminMarkers['entregador_' + id]) {
+    adminMarkers['entregador_' + id].openPopup();
+  } else if (adminMarkers['cliente_' + id]) {
+    adminMarkers['cliente_' + id].openPopup();
   }
 }
 

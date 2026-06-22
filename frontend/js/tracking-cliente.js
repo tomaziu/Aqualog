@@ -3,6 +3,9 @@ var clienteWs = null;
 var clienteMap = null;
 var clienteMarkers = {};
 var clienteRoute = null;
+var clienteGpsWatchId = null;
+var clienteGpsIntervalo = null;
+var clienteGpsCompartilhando = false;
 
 function clienteStatusTexto(status) {
   var labels = {
@@ -36,8 +39,10 @@ async function buscarEntregaCliente(id, telefone) {
     return;
   }
   clienteEntregaAtual = json.data;
+  clienteEntregaAtual._telefone = telefone;
   renderClienteEntrega(clienteEntregaAtual);
   conectarClienteWs(id, telefone);
+  iniciarClienteGps(id, telefone);
 }
 
 function renderClienteEntrega(e) {
@@ -104,23 +109,60 @@ function desenharMapaCliente(e) {
         attribution: '&copy; OpenStreetMap'
       }).addTo(clienteMap);
     }
-    atualizarMarcadorCliente('origem', [Number(e.origem_latitude), Number(e.origem_longitude)], 'Origem');
+    atualizarMarcadorCliente('origem', [Number(e.origem_latitude), Number(e.origem_longitude)], 'Loja');
     atualizarMarcadorCliente('destino', [Number(e.destino_latitude), Number(e.destino_longitude)], 'Destino');
     if (e.entregador_latitude) {
       atualizarMarcadorCliente('entregador', [Number(e.entregador_latitude), Number(e.entregador_longitude)], 'Entregador');
     }
+    if (e.cliente_atual_latitude) {
+      atualizarMarcadorCliente('cliente', [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)], 'Você');
+    }
     var coords = [
       [Number(e.origem_latitude), Number(e.origem_longitude)],
       e.entregador_latitude ? [Number(e.entregador_latitude), Number(e.entregador_longitude)] : null,
+      e.cliente_atual_latitude ? [Number(e.cliente_atual_latitude), Number(e.cliente_atual_longitude)] : null,
       [Number(e.destino_latitude), Number(e.destino_longitude)]
-    ].filter(Boolean);
+    ].filter(function(c) { return c && c[0] && c[1]; });
     if (!clienteRoute) {
       clienteRoute = L.polyline(coords, { color: '#2563eb', weight: 5, opacity: .82 }).addTo(clienteMap);
     } else {
       clienteRoute.setLatLngs(coords);
     }
-    clienteMap.fitBounds(L.latLngBounds(coords), { padding: [44, 44], maxZoom: 15 });
+    if (coords.length) {
+      clienteMap.fitBounds(L.latLngBounds(coords), { padding: [44, 44], maxZoom: 15 });
+    }
   });
+}
+
+function iniciarClienteGps(deliveryId, telefone) {
+  if (!navigator.geolocation || clienteGpsCompartilhando) return;
+  clienteGpsCompartilhando = true;
+  if (clienteGpsWatchId !== null) navigator.geolocation.clearWatch(clienteGpsWatchId);
+  clienteGpsWatchId = navigator.geolocation.watchPosition(function(pos) {
+    enviarLocalizacaoCliente(deliveryId, telefone, pos.coords);
+  }, function() {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 12000 });
+  if (clienteGpsIntervalo) clearInterval(clienteGpsIntervalo);
+  clienteGpsIntervalo = setInterval(function() {
+    if (clienteEntregaAtual) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        enviarLocalizacaoCliente(deliveryId, telefone, pos.coords);
+      }, function() {}, { enableHighAccuracy: true, timeout: 8000 });
+    }
+  }, 6000);
+}
+
+async function enviarLocalizacaoCliente(deliveryId, telefone, coords) {
+  try {
+    await fetch(window.location.origin + '/api/v1/site/deliveries/' + encodeURIComponent(deliveryId) + '/client-location?telefone=' + encodeURIComponent(telefone), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy
+      })
+    });
+  } catch (e) {}
 }
 
 function conectarClienteWs(id, telefone) {

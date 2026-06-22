@@ -11,7 +11,7 @@ from jose import JWTError, jwt
 from auth import ALGORITHM, SECRET_KEY, get_admin_user, get_entregador_user
 from database import get_connection
 from delivery_realtime import connect, disconnect, notify_delivery
-from models import DeliveryAssignDriver, DeliveryCreate, DeliveryCreateFromPedido, DeliveryLocationUpdate, DeliveryStatusUpdate
+from models import ClientLocationUpdate, DeliveryAssignDriver, DeliveryCreate, DeliveryCreateFromPedido, DeliveryLocationUpdate, DeliveryStatusUpdate
 from sse_manager import notify as notify_sse
 
 router = APIRouter()
@@ -316,6 +316,31 @@ def obter_entrega_cliente(delivery_id: int, telefone: str = Query(...)):
         if not digits_request or not digits_cliente.endswith(digits_request[-8:]):
             raise HTTPException(403, 'Entrega não autorizada para este telefone')
         return {'success': True, 'data': entrega}
+    finally:
+        cur.close()
+        con.close()
+
+
+@router.post('/site/deliveries/{delivery_id}/client-location')
+def enviar_localizacao_cliente(delivery_id: int, dados: ClientLocationUpdate, telefone: str = Query(...)):
+    con = get_connection()
+    cur = con.cursor(dictionary=True)
+    try:
+        entrega = buscar_entrega(cur, delivery_id)
+        if not entrega:
+            raise HTTPException(404, 'Entrega não encontrada')
+        digits_request = ''.join(ch for ch in telefone if ch.isdigit())
+        digits_cliente = ''.join(ch for ch in (entrega.get('cliente_telefone') or '') if ch.isdigit())
+        if not digits_request or not digits_cliente.endswith(digits_request[-8:]):
+            raise HTTPException(403, 'Entrega não autorizada para este telefone')
+
+        cur.execute('''UPDATE deliveries
+                       SET cliente_atual_latitude=%s, cliente_atual_longitude=%s, cliente_atual_accuracy=%s, updated_at=NOW()
+                       WHERE id=%s''',
+                    (dados.latitude, dados.longitude, dados.accuracy, delivery_id))
+        con.commit()
+        publicar_entrega(cur, delivery_id, 'client_location_updated')
+        return {'success': True}
     finally:
         cur.close()
         con.close()
