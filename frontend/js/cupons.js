@@ -35,7 +35,8 @@ function filtrarCupons() {
   var dados = cacheCupons.filter(function(c) {
     return !q || String(c.codigo || '').toLowerCase().includes(q);
   });
-  $('listaCupons').innerHTML = dados.map(function(c) {
+  var paginado = paginarDados('cupons', dados);
+  $('listaCupons').innerHTML = paginado.dados.map(function(c) {
     var ativo = Number(c.ativo) === 1 || c.ativo === true;
     var validade = dataDisplayCupom(c.validade_inicio) + ' até ' + dataDisplayCupom(c.validade_fim);
     var limiteUsos = c.limite_usos ? Number(c.limite_usos) : '';
@@ -64,7 +65,7 @@ function filtrarCupons() {
         '<button class="delete" onclick="excluirCupom(' + c.id + ')">Excluir</button>' +
       '</td>' +
     '</tr>';
-  }).join('');
+  }).join('') + renderPaginacao('cupons');
 }
 
 async function salvarCupom(id) {
@@ -94,12 +95,13 @@ async function salvarCupom(id) {
 }
 
 async function excluirCupom(id) {
-  if (!confirm('Excluir este cupom?')) return;
-  if (await apiDelete('/cupons/' + id)) {
-    ultimoCupons = null;
-    await carregarCupons();
-    mostrarToast('sucesso', 'Cupom excluído.');
-  }
+  mostrarConfirm('Excluir cupom', 'Excluir este cupom?', async function() {
+    if (await apiDelete('/cupons/' + id)) {
+      ultimoCupons = null;
+      await carregarCupons();
+      mostrarToast('sucesso', 'Cupom excluído.');
+    }
+  });
 }
 
 $('formCupom').onsubmit = async function(e) {

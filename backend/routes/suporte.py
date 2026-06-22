@@ -47,7 +47,7 @@ def listar_mensagens(pedido_id: int, admin=Depends(get_admin_user)):
     cur.execute('UPDATE suporte_mensagens SET lida=1 WHERE pedido_id=%s AND autor=%s', (pedido_id, 'cliente'))
     con.commit()
 
-    cur.execute('''SELECT id, autor, mensagem, criado_em
+    cur.execute('''SELECT id, autor, mensagem, arquivo_nome, arquivo_conteudo, criado_em
                    FROM suporte_mensagens
                    WHERE pedido_id=%s
                    ORDER BY criado_em ASC, id ASC''', (pedido_id,))
@@ -64,9 +64,10 @@ def responder(pedido_id: int, msg: SuporteMensagem, admin=Depends(get_admin_user
         pedido = cur.fetchone()
         if not pedido:
             raise HTTPException(404, 'Pedido não encontrado')
-        cur.execute('''INSERT INTO suporte_mensagens (pedido_id, cliente_id, autor, mensagem, lida)
-                       VALUES (%s, %s, 'admin', %s, 0)''',
-                    (pedido_id, pedido['cliente_id'], msg.mensagem.strip()))
+        cur.execute('''INSERT INTO suporte_mensagens
+                       (pedido_id, cliente_id, autor, mensagem, arquivo_nome, arquivo_conteudo, lida)
+                       VALUES (%s, %s, 'admin', %s, %s, %s, 0)''',
+                    (pedido_id, pedido['cliente_id'], msg.mensagem.strip(), msg.arquivo_nome, msg.arquivo_conteudo))
         con.commit()
         notify('refresh', {'acao': 'mensagem_suporte', 'pedido_id': pedido_id, 'origem': 'admin'})
         return {'success': True, 'data': {'mensagem': 'Resposta enviada'}}

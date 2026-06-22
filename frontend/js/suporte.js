@@ -94,11 +94,52 @@ function iniciaisSuporte(nome) {
 function renderMensagemSuporte(m) {
   var classe = m.autor === 'admin' ? 'admin' : 'cliente';
   var autor = m.autor === 'admin' ? 'Admin' : 'Cliente';
-  return '<div class="support-msg ' + classe + '">' +
+  return '<div class="support-msg ' + classe + '" onclick="this.classList.toggle(\'expanded\')">' +
     '<span class="support-meta">' + autor + '</span>' +
     '<p>' + escapeHtml(m.mensagem) + '</p>' +
+    renderAnexoSuporte(m) +
     '<span class="support-time">' + formatarData(m.criado_em) + '</span>' +
   '</div>';
+}
+
+function renderAnexoSuporte(m) {
+  if (!m || !m.arquivo_conteudo) return '';
+  var nome = escapeHtml(m.arquivo_nome || 'anexo');
+  var conteudo = String(m.arquivo_conteudo || '');
+  var href = escapeHtml(conteudo);
+  if (conteudo.indexOf('data:image/') === 0) {
+    return '<a class="support-attachment" href="javascript:void(0)" onclick="abrirImagemSuporte(this.querySelector(\'img\').src)">' +
+      '<img src="' + href + '" alt="' + nome + '">' +
+      '<span>' + nome + '</span>' +
+    '</a>';
+  }
+  return '<a class="support-attachment support-attachment-file" href="' + href + '" download="' + nome + '">Baixar ' + nome + '</a>';
+}
+
+function abrirImagemSuporte(src) {
+  var antigo = document.getElementById('imagemSuporteModal');
+  if (antigo) antigo.remove();
+
+  var modal = document.createElement('div');
+  modal.id = 'imagemSuporteModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(10,14,26,.85);backdrop-filter:blur(8px);cursor:pointer;animation:fadeImgIn .2s ease';
+
+  modal.innerHTML =
+    '<img src="' + src + '" style="max-width:92vw;max-height:90vh;border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.6);object-fit:contain;border:1px solid rgba(148,163,184,.15)">' +
+    '<button style="position:fixed;top:16px;right:16px;width:40px;height:40px;border:none;border-radius:10px;background:rgba(15,23,42,.8);color:#e2e8f0;font-size:22px;cursor:pointer;border:1px solid rgba(148,163,184,.15);display:flex;align-items:center;justify-content:center" onclick="fecharImagemSuporte()">&times;</button>';
+
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) fecharImagemSuporte();
+  });
+  modal.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fecharImagemSuporte();
+  });
+  document.body.appendChild(modal);
+}
+
+function fecharImagemSuporte() {
+  var modal = document.getElementById('imagemSuporteModal');
+  if (modal) { modal.remove(); }
 }
 
 async function responderSuporte() {

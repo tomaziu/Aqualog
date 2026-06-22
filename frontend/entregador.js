@@ -5,6 +5,11 @@ var filtroAtual = 'todos';
 var todosPedidos = [];
 var intervaloRefresh = null;
 var ultimoPedidosEntregador = null;
+var gpsWatchId = null;
+var gpsIntervaloEnvio = null;
+var gpsUltimaPosicao = null;
+var gpsCompartilhando = false;
+var gpsUltimoEnvio = 0;
 
 function statusClasse(s) {
   return 'status-' + s;
@@ -26,6 +31,108 @@ function limparSessao() {
   sessionStorage.removeItem('entregador_veiculo');
   sessionStorage.removeItem('token');
   sessionStorage.removeItem('tipo');
+}
+
+function atualizarIndicadorGPS(estado, detalhe) {
+  var badge = $('gpsStatus');
+  var info = $('gpsDetalhe');
+  if (!badge || !info) return;
+  var textos = {
+    active: 'Localização ativa',
+    off: 'Localização desativada',
+    weak: 'Sinal GPS fraco',
+    offline: 'Sem conexão com a internet'
+  };
+  badge.textContent = textos[estado] || textos.off;
+  badge.className = 'gps-badge gps-' + (estado === 'active' ? 'active' : estado === 'weak' ? 'weak' : estado === 'offline' ? 'offline' : 'off');
+  info.textContent = detalhe || '';
+}
+
+function temPedidoEmRota() {
+  return todosPedidos.some(function(p) {
+    return p.status === 'saiu_para_entrega' || p.status === 'em_preparo' || p.status === 'recebido';
+  });
+}
+
+function iniciarCompartilhamentoLocalizacao() {
+  if (!navigator.geolocation) {
+    atualizarIndicadorGPS('off', 'Seu navegador não oferece suporte à localização.');
+    return;
+  }
+  if (!navigator.onLine) {
+    atualizarIndicadorGPS('offline', 'Sem internet. A localização será enviada quando a conexão voltar.');
+    return;
+  }
+  gpsCompartilhando = true;
+  atualizarIndicadorGPS('weak', 'Solicitando permissão de localização...');
+  if (gpsWatchId !== null) navigator.geolocation.clearWatch(gpsWatchId);
+  gpsWatchId = navigator.geolocation.watchPosition(function(pos) {
+    gpsUltimaPosicao = pos;
+    var accuracy = pos.coords.accuracy || 0;
+    atualizarIndicadorGPS(accuracy > 80 ? 'weak' : 'active', accuracy > 80 ? 'Localização recebida, mas o sinal está fraco.' : 'Localização ativa e pronta para rastreamento.');
+    enviarLocalizacaoAtual(false);
+  }, function(err) {
+    gpsCompartilhando = false;
+    if (err.code === err.PERMISSION_DENIED) {
+      atualizarIndicadorGPS('off', 'Permissão negada. Não será possível iniciar entregas com rastreamento.');
+    } else {
+      atualizarIndicadorGPS('weak', 'Não foi possível obter a localização agora.');
+    }
+  }, { enableHighAccuracy: true, maximumAge: 4000, timeout: 12000 });
+
+  if (gpsIntervaloEnvio) clearInterval(gpsIntervaloEnvio);
+  gpsIntervaloEnvio = setInterval(function() {
+    enviarLocalizacaoAtual(true);
+  }, 5000);
+}
+
+function pararCompartilhamentoLocalizacao() {
+  gpsCompartilhando = false;
+  if (gpsWatchId !== null) {
+    navigator.geolocation.clearWatch(gpsWatchId);
+    gpsWatchId = null;
+  }
+  if (gpsIntervaloEnvio) {
+    clearInterval(gpsIntervaloEnvio);
+    gpsIntervaloEnvio = null;
+  }
+  atualizarIndicadorGPS('off', 'Compartilhamento finalizado pelo entregador.');
+}
+
+async function enviarLocalizacaoAtual(forcar) {
+  if (!gpsCompartilhando || !gpsUltimaPosicao || !entregadorAtual) return;
+  if (!navigator.onLine) {
+    atualizarIndicadorGPS('offline', 'Sem conexão com a internet. Tentaremos novamente em alguns segundos.');
+    return;
+  }
+  if (!forcar && Date.now() - gpsUltimoEnvio < 5000) return;
+  var c = gpsUltimaPosicao.coords;
+  gpsUltimoEnvio = Date.now();
+  try {
+    var r = await fetch(API + API_PREFIX + '/deliveries/driver/location', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (entregadorAtual.token || sessionStorage.getItem('token'))
+      },
+      body: JSON.stringify({
+        latitude: c.latitude,
+        longitude: c.longitude,
+        accuracy: c.accuracy,
+        heading: c.heading,
+        speed: c.speed,
+        source: 'browser-watchPosition'
+      })
+    });
+    if (r.status === 404) {
+      atualizarIndicadorGPS('weak', 'Localização ativa. Nenhuma entrega rastreável foi encontrada para envio.');
+      return;
+    }
+    if (!r.ok) throw new Error('gps');
+    atualizarIndicadorGPS((c.accuracy || 0) > 80 ? 'weak' : 'active', 'Último envio: ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  } catch (e) {
+    atualizarIndicadorGPS('offline', 'Não foi possível enviar a localização agora.');
+  }
 }
 
 function sessaoValida() {
@@ -91,6 +198,7 @@ async function fazerLogin() {
 }
 
 function sair() {
+  pararCompartilhamentoLocalizacao();
   limparSessao();
   entregadorAtual = null;
   pararAutoRefresh();
@@ -111,6 +219,9 @@ function mostrarMenu() {
     window.clockInterval = setInterval(atualizarRelogio, 1000);
   }
   iniciarAutoRefresh();
+  if (navigator.geolocation && !gpsCompartilhando) {
+    iniciarCompartilhamentoLocalizacao();
+  }
 }
 
 function atualizarRelogio() {
@@ -232,6 +343,74 @@ function renderizar(pedidos) {
   }).join('');
 }
 
+var codigoEntregaPendente = null;
+var codigoModalResolve = null;
+
+function abrirCodigoModal() {
+  return new Promise(function(resolve) {
+    codigoModalResolve = resolve;
+    var boxes = document.querySelectorAll('.codigo-box');
+    boxes.forEach(function(b) { b.value = ''; b.classList.remove('filled'); });
+    $('codigoModal').classList.add('ativo');
+    setTimeout(function() { boxes[0].focus(); }, 100);
+  });
+}
+
+function fecharCodigoModal() {
+  $('codigoModal').classList.remove('ativo');
+  if (codigoModalResolve) { codigoModalResolve(null); codigoModalResolve = null; }
+}
+
+function confirmarCodigoModal() {
+  var boxes = document.querySelectorAll('.codigo-box');
+  var codigo = '';
+  boxes.forEach(function(b) { codigo += b.value; });
+  $('codigoModal').classList.remove('ativo');
+  if (codigoModalResolve) { codigoModalResolve(codigo.length === 6 ? codigo : null); codigoModalResolve = null; }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var container = $('codigoInputs');
+  if (!container) return;
+  var boxes = container.querySelectorAll('.codigo-box');
+
+  boxes.forEach(function(box, idx) {
+    box.addEventListener('input', function(e) {
+      var val = e.target.value.replace(/\D/g, '');
+      e.target.value = val.slice(0, 1);
+      if (val && idx < boxes.length - 1) {
+        boxes[idx + 1].focus();
+      }
+      if (val) e.target.classList.add('filled');
+      else e.target.classList.remove('filled');
+      if (idx === boxes.length - 1 && val) {
+        confirmarCodigoModal();
+      }
+    });
+
+    box.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && !e.target.value && idx > 0) {
+        boxes[idx - 1].focus();
+        boxes[idx - 1].value = '';
+        boxes[idx - 1].classList.remove('filled');
+      }
+      if (e.key === 'Enter') {
+        confirmarCodigoModal();
+      }
+    });
+
+    box.addEventListener('paste', function(e) {
+      e.preventDefault();
+      var texto = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+      texto.split('').forEach(function(ch, i) {
+        if (boxes[i]) { boxes[i].value = ch; boxes[i].classList.add('filled'); }
+      });
+      if (texto.length > 0) boxes[Math.min(texto.length, boxes.length) - 1].focus();
+      if (texto.length === 6) confirmarCodigoModal();
+    });
+  });
+});
+
 async function mudarStatus(event, id, status) {
   console.log('BOTAO CLICADO: Pedido ' + id + ' para status ' + status);
   var btn = event.target;
@@ -239,8 +418,7 @@ async function mudarStatus(event, id, status) {
 
   var codigoEntrega = '';
   if (status === 'entregue') {
-    codigoEntrega = prompt('Digite o código de entrega informado pelo cliente:') || '';
-    codigoEntrega = codigoEntrega.replace(/\D/g, '');
+    codigoEntrega = await abrirCodigoModal();
     if (!codigoEntrega) return;
   }
 
@@ -260,7 +438,7 @@ async function mudarStatus(event, id, status) {
     });
     if (!r.ok) {
       var erro = await r.json().catch(() => ({}));
-      alert('Erro ao atualizar status: ' + (erro.detail || 'Erro desconhecido'));
+      mostrarToast('erro', 'Erro ao atualizar status: ' + (erro.detail || 'Erro desconhecido'));
       btn.disabled = false;
       btn.textContent = originalText;
       return;
@@ -268,7 +446,7 @@ async function mudarStatus(event, id, status) {
     ultimoPedidosEntregador = null;
     await carregarPedidos();
   } catch (e) {
-    alert('Erro de conexao');
+    mostrarToast('erro', 'Erro de conexao');
     if(btn) { btn.disabled = false; btn.textContent = originalText; }
   }
 }

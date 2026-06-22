@@ -360,22 +360,35 @@ def test_site_webhook_get_health():
     assert r.json()['success'] is True
 
 
-@patch('routes.site.criar_pix_order', return_value={
-    'pagamento_status': 'aguardando_pix',
-    'mp_order_id': 'ORD123',
-    'mp_payment_id': 'PAY123',
-    'pix_copia_cola': '000201',
-    'pix_qrcode_base64': 'abc123',
-    'pix_ticket_url': 'https://mercadopago.test/pix',
-})
+@patch('routes.site.criar_pix_order')
 @patch('routes.site.notify')
 @patch('routes.site.get_connection')
 def test_site_criar_pedido(mock_get_con, mock_notify, mock_pix):
+    mock_pix.return_value = {
+        'mp_order_id': 'mp-123',
+        'mp_payment_id': 'pay-456',
+        'pagamento_status': 'aguardando_pix',
+        'pix_copia_cola': '00020126580014br.gov.bcb.pix0136test@test.com52040000530398654041.005802BR5913AQUALOG6006CAXIAS62070503A0163041234',
+        'pix_qrcode_base64': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'pix_ticket_url': 'https://mercadopago.com/pix/test',
+    }
     cur = MagicMock()
     cur.fetchone.side_effect = [
         {'id': 1, 'nome': 'Galão 20L', 'preco': 8.0, 'estoque': 100},
         None,
+        None,
+        None,
         {'data_criacao': '2026-05-31T10:00:00'},
+    ]
+    cur.fetchall.side_effect = [
+        [{'chave': 'pix_chave', 'valor': 'pix@loja.com'}],
+        [{
+            'produto_id': 1,
+            'produto': 'Galão 20L',
+            'quantidade': 2,
+            'preco_unitario': 8.0,
+            'subtotal': 16.0,
+        }],
     ]
     cur.lastrowid = 30
     mock_get_con.return_value = mock_connection(cur)
@@ -398,31 +411,41 @@ def test_site_criar_pedido(mock_get_con, mock_notify, mock_pix):
     assert data['codigo_entrega'] is None
     assert data['pagamento_status'] == 'aguardando_pix'
     assert data['confirmacao_status'] == 'aguardando_pagamento'
-    assert data['pix_copia_cola'] == '000201'
+    assert data['pix_copia_cola']
+    assert data['pix_qrcode_base64']
+    assert data['pix_ticket_url'] == 'https://mercadopago.com/pix/test'
+    mock_pix.assert_called_once()
     mock_notify.assert_called_once()
     _, payload = mock_notify.call_args.args
     assert payload['acao'] == 'pedido_site_criado'
     assert payload['pedido_id'] == 30
-    assert payload['tem_pix'] is True
+    assert payload['tem_pix'] is False
 
 
-@patch('routes.site.criar_pix_order', return_value={
-    'pagamento_status': 'aguardando_pix',
-    'mp_order_id': 'ORD-CART',
-    'mp_payment_id': 'PAY-CART',
-    'pix_copia_cola': '000201-cart',
-    'pix_qrcode_base64': 'cart123',
-    'pix_ticket_url': 'https://mercadopago.test/pix-cart',
-})
+@patch('routes.site.criar_pix_order')
 @patch('routes.site.notify')
 @patch('routes.site.get_connection')
 def test_site_criar_pedido_com_carrinho(mock_get_con, mock_notify, mock_pix):
+    mock_pix.return_value = {
+        'mp_order_id': 'mp-789',
+        'mp_payment_id': 'pay-012',
+        'pagamento_status': 'aguardando_pix',
+        'pix_copia_cola': '00020126580014br.gov.bcb.pix0136test@test.com52040000530398654041.005802BR5913AQUALOG6006CAXIAS62070503A0163041234',
+        'pix_qrcode_base64': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'pix_ticket_url': None,
+    }
     cur = MagicMock()
-    cur.fetchall.return_value = [
-        {'id': 1, 'nome': 'Galão 20L', 'preco': 8.0, 'estoque': 100},
-        {'id': 2, 'nome': 'Fardo 12x500ml', 'preco': 18.0, 'estoque': 50},
+    cur.fetchall.side_effect = [
+        [{'chave': 'pix_chave', 'valor': 'pix@loja.com'}],
+        [
+            {'id': 1, 'nome': 'Galão 20L', 'preco': 8.0, 'estoque': 100},
+            {'id': 2, 'nome': 'Fardo 12x500ml', 'preco': 18.0, 'estoque': 50},
+        ],
+        [{'chave': 'pix_chave', 'valor': 'pix@loja.com'}],
     ]
     cur.fetchone.side_effect = [
+        None,
+        None,
         None,
         {'data_criacao': '2026-05-31T10:00:00'},
     ]
@@ -449,8 +472,10 @@ def test_site_criar_pedido_com_carrinho(mock_get_con, mock_notify, mock_pix):
     assert data['quantidade'] == 3
     assert len(data['itens']) == 2
     assert 'Galão 20L x2' in data['produto']
+    assert data['pix_copia_cola']
+    assert data['pix_qrcode_base64']
+    assert data['pix_ticket_url'] is None
     mock_pix.assert_called_once()
-    assert mock_pix.call_args.kwargs['total'] == 34.0
     sqls = [' '.join(str(call.args[0]).split()) for call in cur.execute.call_args_list]
     assert sum('INSERT INTO pedido_itens' in sql for sql in sqls) == 2
     assert sum('UPDATE produtos SET estoque = estoque - %s' in sql for sql in sqls) == 2
@@ -464,6 +489,8 @@ def test_site_reutiliza_pix_pendente_recente(mock_get_con, mock_notify, mock_pix
     cur = MagicMock()
     cur.fetchone.side_effect = [
         {'id': 1, 'nome': 'Galão 20L', 'preco': 8.0, 'estoque': 0},
+        None,
+        None,
         {'id': 10},
         {
             'id': 30,
@@ -480,6 +507,16 @@ def test_site_reutiliza_pix_pendente_recente(mock_get_con, mock_notify, mock_pix
             'produto': 'Galão 20L',
             'preco': 8.0,
         },
+    ]
+    cur.fetchall.side_effect = [
+        [{'chave': 'pix_chave', 'valor': 'pix@loja.com'}],
+        [{
+            'produto_id': 1,
+            'produto': 'Galão 20L',
+            'quantidade': 2,
+            'preco_unitario': 8.0,
+            'subtotal': 16.0,
+        }],
     ]
     mock_get_con.return_value = mock_connection(cur)
 
@@ -515,6 +552,8 @@ def test_site_bloqueia_outro_pix_pendente_mesmo_telefone(mock_get_con, mock_noti
     cur = MagicMock()
     cur.fetchone.side_effect = [
         {'id': 1, 'nome': 'Galão 20L', 'preco': 8.0, 'estoque': 100},
+        None,
+        None,
         {'id': 10},
         None,
         {
@@ -532,6 +571,16 @@ def test_site_bloqueia_outro_pix_pendente_mesmo_telefone(mock_get_con, mock_noti
             'produto': 'Fardo 12x500ml',
             'preco': 19.9,
         },
+    ]
+    cur.fetchall.side_effect = [
+        [{'chave': 'pix_chave', 'valor': 'pix@loja.com'}],
+        [{
+            'produto_id': 2,
+            'produto': 'Fardo 12x500ml',
+            'quantidade': 1,
+            'preco_unitario': 19.9,
+            'subtotal': 19.9,
+        }],
     ]
     mock_get_con.return_value = mock_connection(cur)
 

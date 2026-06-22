@@ -18,6 +18,8 @@ from routes.suporte import router as suporte_router
 from routes.configuracoes import router as configuracoes_router
 from routes.cupons import router as cupons_router
 from routes.backup import router as backup_router
+from routes.deliveries import router as deliveries_router
+from delivery_realtime import init as delivery_rt_init
 from sse_manager import init as sse_init, event_generator
 from auth import SECRET_KEY, ALGORITHM
 from logger import logger
@@ -26,7 +28,9 @@ from logger import logger
 @asynccontextmanager
 async def lifespan(app):
     logger.info("Starting ÁquaLog API")
-    sse_init(asyncio.get_running_loop())
+    loop = asyncio.get_running_loop()
+    sse_init(loop)
+    delivery_rt_init(loop)
     logger.info("SSE manager initialized")
     yield
     logger.info("Shutting down ÁquaLog API")
@@ -64,6 +68,7 @@ app.include_router(suporte_router, prefix=API_PREFIX)
 app.include_router(configuracoes_router, prefix=API_PREFIX)
 app.include_router(cupons_router, prefix=API_PREFIX)
 app.include_router(backup_router, prefix=API_PREFIX)
+app.include_router(deliveries_router, prefix=API_PREFIX)
 
 
 @app.get(API_PREFIX + '/health')
@@ -94,6 +99,8 @@ async def sse_events(token: str = Query(None)):
 
 
 frontend_dir = str(Path(__file__).resolve().parent.parent / 'frontend')
+uploads_dir = str(Path(__file__).resolve().parent / 'uploads')
+app.mount('/uploads', StaticFiles(directory=uploads_dir), name='uploads')
 app.mount('/', StaticFiles(directory=frontend_dir, html=True))
 
 if __name__ == '__main__':

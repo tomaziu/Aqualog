@@ -1,13 +1,18 @@
+import json
 import re
 import time
 import hashlib
+import unicodedata
 from datetime import date, datetime
+from urllib.parse import urlencode
+from urllib.request import Request as URLRequest, urlopen
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from database import get_connection
 from delivery_code import gerar_codigo_entrega
 from mercado_pago import MercadoPagoError, consultar_pix_order, criar_pix_order
 from models import ComprovantePix, PedidoSite, SuporteMensagem
+from pix_manual import gerar_pix_manual
 from routes.configuracoes import _ler_configuracoes
 from sse_manager import event_generator, notify
 
@@ -130,6 +135,14 @@ def _buscar_cupom(cur, codigo: str, total: float = 0):
         raise HTTPException(400, 'Cupom inválido ou inativo.')
     _validar_cupom_regras(cupom, total)
     return cupom
+
+
+def _clientes_tem_colunas_geo(cur) -> bool:
+    cur.execute("SHOW COLUMNS FROM clientes LIKE 'latitude'")
+    tem_latitude = cur.fetchone() is not None
+    cur.execute("SHOW COLUMNS FROM clientes LIKE 'longitude'")
+    tem_longitude = cur.fetchone() is not None
+    return tem_latitude and tem_longitude
 
 
 def _registrar_movimento_estoque(cur, item: dict, pedido_id: int, observacao: str):
@@ -361,7 +374,7 @@ def _registrar_tentativa_site(telefone: str, request: Request):
 @router.get('/site/produtos')
 def listar_produtos_site():
     con = get_connection(); cur = con.cursor(dictionary=True)
-    cur.execute('SELECT id, nome, preco, estoque FROM produtos WHERE ativo=1 AND estoque > 0 ORDER BY nome')
+    cur.execute('SELECT id, nome, preco, estoque, imagem FROM produtos WHERE ativo=1 AND estoque > 0 ORDER BY nome')
     dados = cur.fetchall(); cur.close(); con.close()
     return {'success': True, 'data': dados}
 
@@ -370,6 +383,89 @@ def listar_produtos_site():
 def config_site():
     from routes.configuracoes import configuracoes_publicas
     return configuracoes_publicas()
+
+
+@router.get('/site/enderecos/sugestoes')
+def sugestoes_enderecos(q: str = Query('', max_length=80)):
+    termo = (q or '').strip()
+    if len(termo) < 2:
+        return {'success': True, 'data': []}
+    like = '%' + termo + '%'
+    con = get_connection(); cur = con.cursor(dictionary=True)
+    try:
+        cur.execute('''
+            SELECT endereco, bairro,
+                   MAX(numero_casa) AS numero_casa,
+                   MAX(referencia) AS referencia,
+                   COUNT(*) AS vezes_usado
+            FROM clientes
+            WHERE endereco LIKE %s OR bairro LIKE %s
+            GROUP BY endereco, bairro
+            ORDER BY vezes_usado DESC, endereco ASC
+            LIMIT 8
+        ''', (like, like))
+        return {'success': True, 'data': cur.fetchall() or []}
+    finally:
+        cur.close(); con.close()
+
+
+def _texto_geo(valor):
+    texto = unicodedata.normalize('NFKD', str(valor or '').lower())
+    return ''.join(ch for ch in texto if not unicodedata.combining(ch))
+
+
+def _resultado_em_caxias_ma(props):
+    cidade = _texto_geo(props.get('city') or props.get('county') or props.get('district') or props.get('name'))
+    estado = _texto_geo(props.get('state'))
+    pais = _texto_geo(props.get('country'))
+    return 'caxias' in cidade and ('maranhao' in estado or estado == 'ma') and ('brasil' in pais or 'brazil' in pais)
+
+
+@router.get('/site/enderecos/mapa-sugestoes')
+def sugestoes_enderecos_mapa(q: str = Query('', max_length=120), lat: float = Query(None), lon: float = Query(None)):
+    termo = (q or '').strip()
+    if len(termo) < 3:
+        return {'success': True, 'data': []}
+    params = {
+        'q': f'{termo}, Caxias, Maranhão, Brasil',
+        'limit': 12,
+    }
+    params['lat'] = lat if lat is not None else -4.8589
+    params['lon'] = lon if lon is not None else -43.3554
+    url = 'https://photon.komoot.io/api/?' + urlencode(params)
+    req = URLRequest(url, headers={'User-Agent': 'AquaLog/1.0 address autocomplete'})
+    try:
+        with urlopen(req, timeout=8) as response:
+            payload = json.loads(response.read().decode('utf-8'))
+    except Exception:
+        return sugestoes_enderecos(termo)
+
+    sugestoes = []
+    for item in payload.get('features') or []:
+        props = item.get('properties') or {}
+        coords = (item.get('geometry') or {}).get('coordinates') or []
+        rua = props.get('street') or props.get('name') or ''
+        bairro = props.get('district') or props.get('suburb') or props.get('city') or props.get('county') or ''
+        cidade = props.get('city') or props.get('county') or ''
+        estado = props.get('state') or ''
+        pais = props.get('country') or ''
+        if not rua and not bairro:
+            continue
+        if not _resultado_em_caxias_ma(props):
+            continue
+        sugestoes.append({
+            'endereco': rua,
+            'bairro': bairro,
+            'numero_casa': props.get('housenumber') or '',
+            'referencia': ', '.join([x for x in [cidade, estado] if x]),
+            'cidade': cidade,
+            'estado': estado,
+            'pais': pais,
+            'latitude': coords[1] if len(coords) >= 2 else None,
+            'longitude': coords[0] if len(coords) >= 2 else None,
+            'origem': 'mapa',
+        })
+    return {'success': True, 'data': sugestoes}
 
 
 @router.post('/site/mercado-pago/webhook')
@@ -446,16 +542,31 @@ def criar_pedido_site(pedido: PedidoSite, request: Request):
         total = max(0, round(subtotal - desconto_valor, 2))
         resumo_produtos = _resumo_itens(itens_detalhados)
 
+        clientes_geo = _clientes_tem_colunas_geo(cur)
         cur.execute('SELECT id FROM clientes WHERE telefone=%s LIMIT 1', (telefone,))
         cliente = cur.fetchone()
         if cliente:
             cliente_id = cliente['id']
-            cur.execute('''UPDATE clientes SET nome=%s, endereco=%s, numero_casa=%s, bairro=%s, referencia=%s WHERE id=%s''',
-                        (pedido.nome, pedido.endereco, pedido.numero_casa, pedido.bairro, pedido.referencia, cliente_id))
+            if clientes_geo:
+                cur.execute('''UPDATE clientes
+                               SET nome=%s, endereco=%s, numero_casa=%s, bairro=%s, referencia=%s,
+                                   latitude=COALESCE(%s, latitude), longitude=COALESCE(%s, longitude)
+                               WHERE id=%s''',
+                            (pedido.nome, pedido.endereco, pedido.numero_casa, pedido.bairro, pedido.referencia,
+                             pedido.latitude, pedido.longitude, cliente_id))
+            else:
+                cur.execute('''UPDATE clientes SET nome=%s, endereco=%s, numero_casa=%s, bairro=%s, referencia=%s WHERE id=%s''',
+                            (pedido.nome, pedido.endereco, pedido.numero_casa, pedido.bairro, pedido.referencia, cliente_id))
         else:
-            cur.execute('''INSERT INTO clientes (nome, telefone, endereco, numero_casa, bairro, referencia)
-                           VALUES (%s,%s,%s,%s,%s,%s)''',
-                        (pedido.nome, telefone, pedido.endereco, pedido.numero_casa, pedido.bairro, pedido.referencia))
+            if clientes_geo:
+                cur.execute('''INSERT INTO clientes (nome, telefone, endereco, numero_casa, bairro, referencia, latitude, longitude)
+                               VALUES (%s,%s,%s,%s,%s,%s,%s,%s)''',
+                            (pedido.nome, telefone, pedido.endereco, pedido.numero_casa, pedido.bairro,
+                             pedido.referencia, pedido.latitude, pedido.longitude))
+            else:
+                cur.execute('''INSERT INTO clientes (nome, telefone, endereco, numero_casa, bairro, referencia)
+                               VALUES (%s,%s,%s,%s,%s,%s)''',
+                            (pedido.nome, telefone, pedido.endereco, pedido.numero_casa, pedido.bairro, pedido.referencia))
             cliente_id = cur.lastrowid
 
         if cliente:
@@ -478,7 +589,7 @@ def criar_pedido_site(pedido: PedidoSite, request: Request):
             if outro_pedido_pendente:
                 raise HTTPException(
                     429,
-                    f'Você já tem Pix pendente no pedido #{outro_pedido_pendente["id"]}. Pague esse QR Code ou peça ao admin para cancelar antes de gerar outro.'
+                    f'Você já tem Pix pendente no pedido #{outro_pedido_pendente["id"]}. Envie o comprovante pelo suporte ou peça ao admin para cancelar antes de gerar outro.'
                 )
 
         _validar_estoque_carrinho(itens_detalhados)
@@ -509,41 +620,66 @@ def criar_pedido_site(pedido: PedidoSite, request: Request):
         cur.execute('''INSERT INTO pedido_historico (pedido_id, status_anterior, status_novo, observacao)
                        VALUES (%s, NULL, 'recebido', 'Pedido criado pelo site do cliente')''', (pedido_id,))
 
-        pix = {}
-        if pedido.forma_pagamento.strip().lower() == 'pix':
-            try:
-                pix = criar_pix_order(
-                    pedido_id=pedido_id,
-                    total=total,
-                    descricao=f'Pedido #{pedido_id} - {resumo_produtos}',
-                    email=_email_pagador(pedido, telefone),
-                )
-                _atualizar_pagamento(cur, pedido_id, pix)
-                cur.execute('''INSERT INTO pedido_historico (pedido_id, status_anterior, status_novo, observacao)
-                               VALUES (%s, %s, %s, 'Pix gerado pelo Mercado Pago')''',
-                            (pedido_id, 'recebido', 'recebido'))
-            except MercadoPagoError as exc:
-                con.rollback()
-                raise HTTPException(400, str(exc))
-
         con.commit()
         notify('refresh', {
             'acao': 'pedido_site_criado',
             'id': pedido_id,
             'pedido_id': pedido_id,
             'origem': 'site',
-            'pagamento_status': pix.get('pagamento_status', pagamento_status),
-            'tem_pix': bool(pix.get('pix_copia_cola') or pix.get('pix_qrcode_base64') or pix.get('pix_ticket_url')),
+            'pagamento_status': pagamento_status,
+            'tem_pix': False,
         })
         cur.execute('SELECT data_criacao FROM pedidos WHERE id=%s', (pedido_id,))
         pedido_criado = cur.fetchone() or {}
-        resposta_confirmacao = 'confirmado' if pix.get('pagamento_status') == 'pago' else confirmacao_status
+        resposta_confirmacao = confirmacao_status
         resposta_codigo = codigo_entrega if resposta_confirmacao == 'confirmado' else None
+        configuracoes = _ler_configuracoes(cur)
+        chave_pix = configuracoes.get('pix_chave', '')
+
+        pix_copia_cola = None
+        pix_qrcode_base64 = None
+        pix_ticket_url = None
+
+        if pix_pedido:
+            try:
+                mp_dados = criar_pix_order(
+                    pedido_id,
+                    total,
+                    f'Pedido #{pedido_id} - AquaLog',
+                    f'cliente{pedido_id}@aqualog.com',
+                )
+                pix_copia_cola = mp_dados.get('pix_copia_cola')
+                pix_qrcode_base64 = mp_dados.get('pix_qrcode_base64')
+                pix_ticket_url = mp_dados.get('pix_ticket_url')
+                cur.execute('''UPDATE pedidos SET mp_order_id=%s, mp_payment_id=%s
+                               WHERE id=%s''',
+                            (mp_dados.get('mp_order_id'), mp_dados.get('mp_payment_id'), pedido_id))
+                con.commit()
+            except MercadoPagoError:
+                pix_manual = gerar_pix_manual(
+                    chave_pix,
+                    total,
+                    configuracoes.get('nome_loja') or 'AquaLog',
+                    'CAXIAS',
+                    f'AQUALOG{pedido_id}',
+                )
+                pix_copia_cola = pix_manual.get('pix_copia_cola')
+                pix_qrcode_base64 = pix_manual.get('pix_qrcode_base64')
+            except Exception:
+                pix_manual = gerar_pix_manual(
+                    chave_pix,
+                    total,
+                    configuracoes.get('nome_loja') or 'AquaLog',
+                    'CAXIAS',
+                    f'AQUALOG{pedido_id}',
+                )
+                pix_copia_cola = pix_manual.get('pix_copia_cola')
+                pix_qrcode_base64 = pix_manual.get('pix_qrcode_base64')
 
         return {'success': True, 'data': {
             'id': pedido_id,
             'status': 'recebido',
-            'pagamento_status': pix.get('pagamento_status', pagamento_status),
+            'pagamento_status': pagamento_status,
             'confirmacao_status': resposta_confirmacao,
             'subtotal': subtotal,
             'desconto_valor': desconto_valor,
@@ -555,9 +691,10 @@ def criar_pedido_site(pedido: PedidoSite, request: Request):
             'itens': itens_detalhados,
             'codigo_entrega': resposta_codigo,
             'data_criacao': pedido_criado.get('data_criacao'),
-            'pix_copia_cola': pix.get('pix_copia_cola'),
-            'pix_qrcode_base64': pix.get('pix_qrcode_base64'),
-            'pix_ticket_url': pix.get('pix_ticket_url'),
+            'pix_copia_cola': pix_copia_cola,
+            'pix_qrcode_base64': pix_qrcode_base64,
+            'pix_ticket_url': pix_ticket_url,
+            'pix_chave': chave_pix,
             'mensagem': 'Pedido recebido'
         }}
     except HTTPException:
@@ -671,7 +808,7 @@ def listar_suporte_cliente(id: int, telefone: str = Query(..., min_length=8)):
     if not pedido:
         cur.close(); con.close()
         raise HTTPException(404, 'Pedido não encontrado para este telefone')
-    cur.execute('''SELECT id, autor, mensagem, criado_em
+    cur.execute('''SELECT id, autor, mensagem, arquivo_nome, arquivo_conteudo, criado_em
                    FROM suporte_mensagens
                    WHERE pedido_id=%s
                    ORDER BY criado_em ASC, id ASC''', (id,))
@@ -687,9 +824,10 @@ def enviar_suporte_cliente(id: int, msg: SuporteMensagem, telefone: str = Query(
         pedido = _pedido_por_telefone(cur, id, telefone)
         if not pedido:
             raise HTTPException(404, 'Pedido não encontrado para este telefone')
-        cur.execute('''INSERT INTO suporte_mensagens (pedido_id, cliente_id, autor, mensagem)
-                       VALUES (%s, %s, 'cliente', %s)''',
-                    (id, pedido['cliente_id'], msg.mensagem.strip()))
+        cur.execute('''INSERT INTO suporte_mensagens
+                       (pedido_id, cliente_id, autor, mensagem, arquivo_nome, arquivo_conteudo)
+                       VALUES (%s, %s, 'cliente', %s, %s, %s)''',
+                    (id, pedido['cliente_id'], msg.mensagem.strip(), msg.arquivo_nome, msg.arquivo_conteudo))
         con.commit()
         notify('refresh', {'acao': 'mensagem_suporte', 'pedido_id': id, 'origem': 'cliente'})
         return {'success': True, 'data': {'mensagem': 'Mensagem enviada'}}

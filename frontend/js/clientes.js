@@ -116,8 +116,9 @@ function filtrarClientes() {
   var filtrados = cacheClientes.filter(function(c) {
     return !q || c.nome.toLowerCase().includes(q) || c.bairro.toLowerCase().includes(q) || c.telefone.toLowerCase().includes(q);
   });
-  window.idsClientesVisiveis = filtrados.map(function(c) { return c.id; });
-  $('listaClientes').innerHTML = filtrados.map(renderCliente).join('');
+  var paginado = paginarDados('clientes', filtrados);
+  window.idsClientesVisiveis = paginado.dados.map(function(c) { return c.id; });
+  $('listaClientes').innerHTML = paginado.dados.map(renderCliente).join('') + renderPaginacao('clientes');
   atualizarResumoSelecaoMassa('clientes');
 }
 
@@ -139,11 +140,12 @@ async function salvarCliente(id) {
 }
 
 async function excluirCliente(id) {
-  if (!confirm('Deseja excluir este cliente?')) return;
-  if (await apiDelete('/clientes/' + id)) {
-    await carregarTudo();
-    mostrarToast('sucesso', 'Cliente excluido com sucesso!');
-  }
+  mostrarConfirm('Excluir cliente', 'Deseja excluir este cliente?', async function() {
+    if (await apiDelete('/clientes/' + id)) {
+      await carregarTudo();
+      mostrarToast('sucesso', 'Cliente excluido com sucesso!');
+    }
+  });
 }
 
 async function excluirClientesSelecionados() {

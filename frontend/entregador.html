@@ -3,73 +3,231 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ÁquaLog - Entregador</title>
+  <title>AquaLog - Entregador</title>
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
   <link rel="stylesheet" href="style.css">
   <style>
-    body { background: #f0f2f5; display: block; padding: 0; }
-    #tela-login { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-    #tela-login img { display: block; margin: 0 auto 4px; width: 260px; }
-    #tela-login p { color: #616161; margin-bottom: 20px; }
-    #tela-login input { width: 100%; max-width: 260px; padding: 12px; font-size: 1rem; text-align: center; border: 1px solid #e0e0e0; border-radius: 6px; margin-bottom: 14px; outline: none; }
-    #tela-login input:focus { border-color: #1565c0; box-shadow: 0 0 0 2px rgba(21,101,192,.12); }
-    #tela-login button { width: 100%; max-width: 260px; padding: 12px; font-size: 1rem; background: #1565c0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
-    #tela-login .erro { color: #d32f2f; margin-top: 12px; font-size: 0.9rem; }
+    body { background: #0a0e1a; display: block; padding: 0; color: #e2e8f0; font-family: "Outfit", "Inter", "Segoe UI", system-ui, sans-serif; }
+    #tela-login { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; background: radial-gradient(circle at 50% 20%, rgba(6, 182, 212, 0.12), transparent 40vw), linear-gradient(180deg, #0a0e1a, #0f172a); }
+    #tela-login p { color: #64748b; margin-bottom: 20px; }
+    #tela-login input { width: 100%; max-width: 260px; padding: 12px; font-size: 1rem; text-align: center; border: 1px solid rgba(148,163,184,.15); border-radius: 8px; margin-bottom: 14px; outline: none; background: rgba(15,23,42,.7); color: #e2e8f0; }
+    #tela-login input:focus { border-color: #06b6d4; box-shadow: 0 0 0 3px rgba(6,182,212,.15); }
+    #tela-login button { width: 100%; max-width: 260px; padding: 12px; font-size: 1rem; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 16px rgba(6,182,212,.25); }
+    #tela-login .erro { color: #f87171; margin-top: 12px; font-size: 0.9rem; }
 
-    #tela-menu { display: none; padding: 20px; max-width: 500px; margin: 0 auto; }
-    #tela-menu .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
-    #tela-menu .topo h1 { font-size: 1.5rem; color: #1565c0; margin: 0; }
-    #tela-menu .topo button { background: #c62828; border: none; color: #fff; font-size: .9rem; cursor: pointer; padding: 8px 14px; border-radius: 4px; font-weight: 700; }
-    #info-entregador { font-size: 0.9rem; color: #555; margin-top: 4px; }
-    #rodape-menu { margin-top: 24px; padding: 16px; background: #fff; border-radius: 4px; text-align: center; font-size: .85rem; color: #555; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    #tela-menu { display: none; padding: 20px; max-width: 560px; margin: 0 auto; }
+    #tela-menu .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 14px; border: 1px solid rgba(148,163,184,.1); border-radius: 10px; background: rgba(15,23,42,.5); }
+    #tela-menu .topo h1 { font-size: 1.5rem; color: #06b6d4; margin: 0; }
+    #tela-menu .topo button { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.15); color: #f87171; font-size: .9rem; cursor: pointer; padding: 8px 14px; border-radius: 999px; font-weight: 700; }
+    #info-entregador { font-size: 0.9rem; color: #94a3b8; margin-top: 4px; }
+    #rodape-menu { margin-top: 24px; padding: 16px; background: rgba(15,23,42,.5); border: 1px solid rgba(148,163,184,.1); border-radius: 10px; text-align: center; font-size: .85rem; color: #94a3b8; }
     #rodape-menu .linha { margin: 4px 0; }
-    #rodape-menu .relogio { font-size: 1.8rem; font-weight: 700; color: #1565c0; }
+    #rodape-menu .relogio { font-size: 1.8rem; font-weight: 700; color: #06b6d4; }
     .menu-botoes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .menu-botoes button {
       padding: 20px 14px; font-size: 1.1rem; font-weight: 600;
-      border: none; border-radius: 4px; cursor: pointer; text-align: center;
+      border: none; border-radius: 10px; cursor: pointer; text-align: center;
       display: flex; flex-direction: column; align-items: center; gap: 10px; transition: .15s ease;
-      box-shadow: 0 1px 3px rgba(0,0,0,.1);
       position: relative;
     }
-    .menu-botoes button:hover { filter: brightness(1.06); }
+    .menu-botoes button:hover { filter: brightness(1.15); transform: translateY(-2px); }
     .menu-botoes button .simbolo { font-size: 2.4rem; line-height: 1; }
-    .menu-botoes button .qtd { background: rgba(255,255,255,.15); padding: 6px 16px; border-radius: 4px; font-size: 1.5rem; font-weight: 700; }
+    .menu-botoes button .qtd { background: rgba(255,255,255,.18); padding: 6px 16px; border-radius: 999px; font-size: 1.5rem; font-weight: 700; }
     .menu-botoes button .seta { position: absolute; bottom: 8px; right: 10px; font-size: 1rem; opacity: .5; }
-    .btn-todos { background: #1565c0; color: #fff; }
-    .btn-rota { background: #e65100; color: #fff; }
-    .btn-preparo { background: #f57f17; color: #fff; }
-    .btn-entregues { background: #2e7d32; color: #fff; }
+    .btn-todos { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; }
+    .btn-rota { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+    .btn-preparo { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; }
+    .btn-entregues { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
 
-    #tela-pedidos { display: none; padding: 16px; max-width: 500px; margin: 0 auto; }
-    #tela-pedidos .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    #tela-pedidos .topo h1 { font-size: 1.2rem; color: #1a73e8; }
-    #tela-pedidos .topo button { background: none; border: none; color: #1a73e8; font-size: 0.9rem; cursor: pointer; padding: 8px; font-weight: 600; }
-    .pedido-card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    #tela-pedidos { display: none; padding: 16px; max-width: 560px; margin: 0 auto; }
+    #tela-pedidos .topo { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 14px; border: 1px solid rgba(148,163,184,.1); border-radius: 10px; background: rgba(15,23,42,.5); }
+    #tela-pedidos .topo h1 { font-size: 1.2rem; color: #06b6d4; }
+    #tela-pedidos .topo button { background: none; border: none; color: #06b6d4; font-size: 0.9rem; cursor: pointer; padding: 8px; font-weight: 600; }
+    .pedido-card { background: rgba(15,23,42,.5); border: 1px solid rgba(148,163,184,.1); border-left: 5px solid #334155; border-radius: 10px; padding: 16px; margin-bottom: 12px; }
     .pedido-card .topo-card { display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px; }
-    .pedido-card .topo-card strong { color: #1a73e8; }
-    .pedido-card .status-badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 20px; font-weight: 600; }
-    .status-recebido { background: #fff3e0; color: #e65100; }
-    .status-em_preparo { background: #fff8e1; color: #f57f17; }
-    .status-saiu_para_entrega { background: #e3f2fd; color: #1565c0; }
-    .status-entregue { background: #e8f5e9; color: #2e7d32; }
-    .status-cancelado { background: #ffebee; color: #c62828; }
-    .pedido-card .endereco { font-size: 0.9rem; color: #333; margin: 4px 0; }
-    .pedido-card .info { font-size: 0.85rem; color: #666; margin: 2px 0; }
+    .pedido-card .topo-card strong { color: #06b6d4; }
+    .pedido-card .status-badge { font-size: 0.75rem; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+    .status-recebido { background: rgba(245,158,11,.12); color: #fbbf24; }
+    .status-em_preparo { background: rgba(245,158,11,.1); color: #fbbf24; }
+    .status-saiu_para_entrega { background: rgba(6,182,212,.12); color: #22d3ee; }
+    .status-entregue { background: rgba(16,185,129,.12); color: #34d399; }
+    .status-cancelado { background: rgba(239,68,68,.12); color: #f87171; }
+    .pedido-card .endereco { font-size: 0.9rem; color: #cbd5e1; margin: 4px 0; }
+    .pedido-card .info { font-size: 0.85rem; color: #94a3b8; margin: 2px 0; }
     .pedido-card .acoes-card { display: flex; gap: 8px; margin-top: 12px; }
     .pedido-card .acoes-card button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 0.9rem; cursor: pointer; font-weight: 600; }
-    .btn-sair { background: #1a73e8; color: #fff; }
-    .btn-entregue { background: #2e7d32; color: #fff; }
-    .btn-voltar { background: #e0e0e0; color: #333; }
-    .vazio { text-align: center; color: #999; padding: 40px 0; }
+    .btn-sair { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; }
+    .btn-entregue { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+    .btn-voltar { background: rgba(148,163,184,.12); color: #94a3b8; }
+    .vazio { text-align: center; color: #475569; padding: 40px 0; }
+    .gps-card { background: rgba(15,23,42,.5); border: 1px solid rgba(148,163,184,.1); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .gps-card .gps-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; }
+    .gps-card strong { color:#e2e8f0; font-size:1rem; }
+    .gps-card p { margin:6px 0 0; color:#94a3b8; font-size:.88rem; line-height:1.45; }
+    .gps-badge { border-radius:999px; padding:6px 10px; font-size:.74rem; font-weight:800; white-space:nowrap; background:rgba(148,163,184,.1); color:#94a3b8; }
+    .gps-active { background:rgba(16,185,129,.12); color:#34d399; }
+    .gps-off { background:rgba(239,68,68,.12); color:#f87171; }
+    .gps-weak { background:rgba(245,158,11,.12); color:#fbbf24; }
+    .gps-offline { background:rgba(148,163,184,.1); color:#64748b; }
+    .gps-actions { display:flex; gap:10px; margin-top:14px; }
+    .gps-actions button { flex:1; border:0; border-radius:8px; padding:12px; font-weight:800; cursor:pointer; }
+    .gps-actions .start { background:linear-gradient(135deg, #06b6d4, #0891b2); color:#fff; box-shadow:0 4px 16px rgba(6,182,212,.25); }
+    .gps-actions .stop { background:rgba(148,163,184,.1); color:#94a3b8; }
+    #gpsDetalhe { margin-top:10px; color:#64748b; font-size:.82rem; }
+    @media (max-width: 420px) {
+      #tela-menu,
+      #tela-pedidos {
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+
+      .menu-botoes {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .codigo-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(10, 14, 26, .8);
+      backdrop-filter: blur(6px);
+    }
+
+    .codigo-modal.ativo {
+      display: flex;
+    }
+
+    .codigo-modal-panel {
+      width: min(380px, 100%);
+      padding: 32px 28px;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #131d33, #0f172a);
+      border: 1px solid rgba(148, 163, 184, .12);
+      box-shadow: 0 24px 64px rgba(0,0,0,.5);
+      text-align: center;
+      animation: modalSlideIn .25s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translateY(20px) scale(.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .codigo-modal-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 16px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      font-size: 26px;
+      box-shadow: 0 6px 20px rgba(245, 158, 11, .3);
+    }
+
+    .codigo-modal-panel h3 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .codigo-modal-panel p {
+      margin: 0 0 24px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .codigo-inputs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .codigo-box {
+      width: 48px;
+      height: 56px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: #fbbf24;
+      background: rgba(15, 23, 42, .8);
+      border: 2px solid rgba(245, 158, 11, .2);
+      border-radius: 12px;
+      outline: none;
+      caret-color: #fbbf24;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .codigo-box:focus {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, .15);
+    }
+
+    .codigo-box.filled {
+      border-color: rgba(245, 158, 11, .5);
+      background: rgba(245, 158, 11, .06);
+    }
+
+    .codigo-modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .codigo-btn-cancel,
+    .codigo-btn-confirm {
+      flex: 1;
+      max-width: 160px;
+      padding: 13px 20px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: .15s ease;
+    }
+
+    .codigo-btn-cancel {
+      background: rgba(148, 163, 184, .1);
+      color: #94a3b8;
+      border: 1px solid rgba(148, 163, 184, .15);
+    }
+
+    .codigo-btn-cancel:hover {
+      background: rgba(148, 163, 184, .18);
+    }
+
+    .codigo-btn-confirm {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, .25);
+    }
+
+    .codigo-btn-confirm:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
+    .codigo-btn-confirm:active {
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
   <div id="tela-login">
-    <img src="logo.png" alt="ÁquaLog">
+    <p style="font-size:1.4rem;font-weight:700"><i class="ph ph-drop"></i> AquaLog</p>
     <p>Entregador - Acesse seus pedidos</p>
     <input id="input-codigo" type="text" placeholder="Digite seu código" maxlength="20" autocomplete="off">
     <button onclick="fazerLogin()">Entrar</button>
@@ -79,10 +237,24 @@
   <div id="tela-menu">
     <div class="topo">
       <div>
-        <img src="logo.png" alt="ÁquaLog" style="width:80px;display:block">
+        <p style="margin:0;font-size:1.2rem;font-weight:700"><i class="ph ph-drop"></i> AquaLog</p>
         <div id="info-entregador"></div>
       </div>
       <button onclick="sair()">Sair</button>
+    </div>
+    <div class="gps-card">
+      <div class="gps-top">
+        <div>
+          <strong>Rastreamento da entrega</strong>
+          <p>A localização é necessária para que clientes e administradores acompanhem a entrega em tempo real.</p>
+        </div>
+        <span id="gpsStatus" class="gps-badge gps-off">Localização desativada</span>
+      </div>
+      <div class="gps-actions">
+        <button class="start" type="button" onclick="iniciarCompartilhamentoLocalizacao()">Iniciar localização</button>
+        <button class="stop" type="button" onclick="pararCompartilhamentoLocalizacao()">Finalizar</button>
+      </div>
+      <div id="gpsDetalhe">Permita o acesso à localização quando o navegador solicitar.</div>
     </div>
     <div class="menu-botoes">
       <button class="btn-todos" onclick="abrirPedidos('todos')">
@@ -125,6 +297,26 @@
       <button onclick="carregarPedidos()" style="background: none; border: none; color: #1a73e8; cursor: pointer; font-size: 1.2rem;" title="Atualizar">🔄</button>
     </div>
     <div id="lista-pedidos"></div>
+  </div>
+
+  <div id="codigoModal" class="codigo-modal">
+    <div class="codigo-modal-panel">
+      <div class="codigo-modal-icon">&#128274;</div>
+      <h3>Digite o código de entrega</h3>
+      <p>Informe o código de 6 dígitos dado pelo cliente.</p>
+      <div class="codigo-inputs" id="codigoInputs">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="codigo-box" data-idx="0">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="codigo-box" data-idx="1">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="codigo-box" data-idx="2">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="codigo-box" data-idx="3">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="codigo-box" data-idx="4">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]" class="codigo-box" data-idx="5">
+      </div>
+      <div class="codigo-modal-actions">
+        <button class="codigo-btn-cancel" onclick="fecharCodigoModal()">Cancelar</button>
+        <button class="codigo-btn-confirm" id="codigoConfirmar" onclick="confirmarCodigoModal()">Confirmar</button>
+      </div>
+    </div>
   </div>
 
   <script src="js/utils.js"></script>

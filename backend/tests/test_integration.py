@@ -75,16 +75,7 @@ def test_site_create_pedido_and_admin_list():
             'quantidade': 2,
             'forma_pagamento': 'Pix',
         }
-        pix_mock = {
-            'mp_order_id': 'order-integracao',
-            'mp_payment_id': 'payment-integracao',
-            'pagamento_status': 'aguardando_pix',
-            'pix_copia_cola': 'pix-copia-cola',
-            'pix_qrcode_base64': None,
-            'pix_ticket_url': 'https://example.test/pix',
-        }
-        with patch('routes.site.criar_pix_order', return_value=pix_mock):
-            create_resp = client.post(f'{API_PREFIX}/site/pedidos', json=site_payload)
+        create_resp = client.post(f'{API_PREFIX}/site/pedidos', json=site_payload)
         assert create_resp.status_code == 200, f'Create failed: {create_resp.text}'
         data = create_resp.json()['data']
         pedido_id = data['id']
@@ -92,22 +83,18 @@ def test_site_create_pedido_and_admin_list():
         assert data['pagamento_status'] == 'aguardando_pix'
         assert data['confirmacao_status'] == 'aguardando_pagamento'
         assert data['codigo_entrega'] is None
+        assert data['pix_copia_cola']
+        assert data['pix_qrcode_base64']
 
         list_resp = client.get(f'{API_PREFIX}/pedidos', headers=admin_headers)
         assert list_resp.status_code == 200
         pedidos = list_resp.json()['data']
         assert any(p['id'] == pedido_id for p in pedidos), f'Pedido {pedido_id} not found in admin list'
 
-        pagamento_mock = {
-            'mp_order_id': 'order-integracao',
-            'mp_payment_id': 'payment-integracao',
-            'pagamento_status': 'pago',
-        }
-        with patch('routes.pedidos.consultar_pix_order', return_value=pagamento_mock):
-            update_pag_resp = client.patch(
-                f'{API_PREFIX}/pedidos/{pedido_id}/pagamento/atualizar',
-                headers=admin_headers,
-            )
+        update_pag_resp = client.patch(
+            f'{API_PREFIX}/pedidos/{pedido_id}/pagamento/atualizar',
+            headers=admin_headers,
+        )
         assert update_pag_resp.status_code == 200
 
         confirm_resp = client.patch(f'{API_PREFIX}/pedidos/{pedido_id}/confirmacao', headers=admin_headers)

@@ -20,6 +20,8 @@ class Cliente(BaseModel):
     numero_casa: Optional[str] = None
     bairro: str = Field(min_length=2)
     referencia: Optional[str] = None
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
 
 
 class Entregador(BaseModel):
@@ -105,6 +107,8 @@ class PedidoSite(BaseModel):
     itens: Optional[List[PedidoItemSite]] = None
     forma_pagamento: str = Field(min_length=2)
     cupom_codigo: Optional[str] = Field(default=None, max_length=40)
+    latitude: Optional[float] = Field(default=None, ge=-90, le=90)
+    longitude: Optional[float] = Field(default=None, ge=-180, le=180)
 
 
 class ComprovantePix(BaseModel):
@@ -114,8 +118,51 @@ class ComprovantePix(BaseModel):
 
 class SuporteMensagem(BaseModel):
     mensagem: str = Field(min_length=1, max_length=1000)
+    arquivo_nome: Optional[str] = Field(default=None, max_length=120)
+    arquivo_conteudo: Optional[str] = Field(default=None, max_length=250000)
 
 
 class PaginacaoParams(BaseModel):
     page: int = Field(default=1, ge=1)
     per_page: int = Field(default=50, ge=1, le=200)
+
+
+class DeliveryCreate(BaseModel):
+    pedido_id: Optional[int] = None
+    cliente_id: int
+    entregador_id: Optional[int] = None
+    origem_endereco: str = Field(min_length=3, max_length=255)
+    origem_latitude: float = Field(ge=-90, le=90)
+    origem_longitude: float = Field(ge=-180, le=180)
+    destino_endereco: str = Field(min_length=3, max_length=255)
+    destino_latitude: float = Field(ge=-90, le=90)
+    destino_longitude: float = Field(ge=-180, le=180)
+    observacoes: Optional[str] = Field(default='', max_length=500)
+
+
+class DeliveryCreateFromPedido(BaseModel):
+    pedido_id: int
+    entregador_id: Optional[int] = None
+    origem_endereco: str = Field(default='Local atual da distribuidora', min_length=3, max_length=255)
+    origem_latitude: float = Field(ge=-90, le=90)
+    origem_longitude: float = Field(ge=-180, le=180)
+
+
+class DeliveryAssignDriver(BaseModel):
+    entregador_id: int
+
+
+class DeliveryStatusUpdate(BaseModel):
+    status: str
+    observacao: Optional[str] = Field(default='', max_length=255)
+
+
+class DeliveryLocationUpdate(BaseModel):
+    delivery_id: Optional[int] = None
+    pedido_id: Optional[int] = None
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    accuracy: Optional[float] = Field(default=None, ge=0)
+    heading: Optional[float] = Field(default=None, ge=0, le=360)
+    speed: Optional[float] = Field(default=None, ge=0)
+    source: Optional[str] = Field(default='browser', max_length=40)

@@ -70,15 +70,48 @@ async function carregarPedidos() {
   filtrarPedidos();
 }
 
+var filtroStatusAtual = 'todos';
+
+function renderStatusBadges() {
+  var container = $('statusBadges');
+  if (!container) return;
+  var contagem = {};
+  cachePedidos.forEach(function(p) {
+    contagem[p.status] = (contagem[p.status] || 0) + 1;
+  });
+  var total = cachePedidos.length;
+  var opcoes = [
+    { chave: 'todos', label: 'Todos', cls: '', count: total },
+    { chave: 'recebido', label: 'Recebido', cls: 'status-badge-recebido' },
+    { chave: 'em_preparo', label: 'Em preparo', cls: 'status-badge-preparo' },
+    { chave: 'aguardando_entregador', label: 'Aguardando', cls: 'status-badge-preparo' },
+    { chave: 'saiu_para_entrega', label: 'Em entrega', cls: 'status-badge-entrega' },
+    { chave: 'entregue', label: 'Entregue', cls: 'status-badge-entregue' },
+    { chave: 'cancelado', label: 'Cancelado', cls: 'status-badge-cancelado' }
+  ];
+  container.innerHTML = opcoes.map(function(op) {
+    var count = op.chave === 'todos' ? total : (contagem[op.chave] || 0);
+    var ativo = filtroStatusAtual === op.chave ? ' active' : '';
+    return '<button class="status-badge ' + op.cls + ativo + '" onclick="filtrarPorStatus(\'' + op.chave + '\')">' +
+      op.label + '<span class="status-badge-count">' + count + '</span></button>';
+  }).join('');
+}
+
+function filtrarPorStatus(status) {
+  filtroStatusAtual = status;
+  filtrarPedidos();
+}
+
 function filtrarPedidos() {
   var q = ($('filtroPedido').value || '').toLowerCase();
   var filtrados = cachePedidos.filter(function(p) {
-    return !q ||
+    var bateQ = !q ||
       (p.cliente && p.cliente.toLowerCase().includes(q)) ||
       (p.entregador && p.entregador.toLowerCase().includes(q)) ||
       (p.bairro && p.bairro.toLowerCase().includes(q)) ||
-      (p.produto && p.produto.toLowerCase().includes(q)) ||
-      (p.status && statusTexto(p.status).toLowerCase().includes(q));
+      (p.produto && p.produto.toLowerCase().includes(q));
+    var bateStatus = filtroStatusAtual === 'todos' || p.status === filtroStatusAtual;
+    return bateQ && bateStatus;
   });
 
   function classePedido(s) {
@@ -164,11 +197,13 @@ function filtrarPedidos() {
 
   if (!filtrados.length) {
     window.idsPedidosVisiveis = [];
+    renderStatusBadges();
     $('listaPedidos').innerHTML = '<div class="empty-list">Nenhum pedido encontrado.</div>';
     atualizarResumoSelecaoMassa('pedidos');
     return;
   }
 
+  renderStatusBadges();
   window.idsPedidosVisiveis = filtrados.map(function(p) { return p.id; });
   $('listaPedidos').innerHTML = filtrados.map(function(p) {
     var statusBloqueado = pedidoFinalizado(p);
@@ -187,8 +222,7 @@ function filtrarPedidos() {
       '<div class="pedido-grid">' +
         '<div class="pedido-info pedido-entregador"><span>Entregador</span>' + selectEntregador(p) + '</div>' +
         '<div class="pedido-info"><span>Pagamento</span>' + renderPagamento(p) + '</div>' +
-        '<div class="pedido-info"><span>Confirmação</span><div class="order-control-stack">' + renderConfirmacao(p) + '</div></div>' +
-        '<div class="pedido-info"><span>Bairro</span><strong>' + escapeHtml(p.bairro || '-') + '</strong></div>' +
+        '<div class="pedido-info"><span>Endereço</span><strong>' + escapeHtml([p.endereco, p.numero_casa, p.bairro].filter(Boolean).join(', ') || '-') + '</strong></div>' +
         '<div class="pedido-info"><span>Código</span>' + renderCodigoEntrega(p) + '</div>' +
         '<div class="pedido-info"><span>Status</span><strong>' + statusTexto(p.status) + '</strong></div>' +
       '</div>' +
@@ -234,15 +268,17 @@ async function atualizarPagamento(id) {
 }
 
 async function cancelarPedido(id) {
-  var motivo = prompt('Motivo do cancelamento:', 'Cliente desistiu');
-  if (motivo === null) return;
-  if (!confirm('Cancelar este pedido e devolver o estoque?')) return;
-  var resposta = await apiSend('/pedidos/' + id + '/cancelar', 'PATCH', { motivo: motivo });
-  if (resposta) {
-    ultimoPedidos = null;
-    await carregarTudo();
-    mostrarToast('sucesso', resposta.mensagem || 'Pedido cancelado.');
-  }
+  mostrarPrompt('Cancelar pedido', 'Motivo do cancelamento:', 'Cliente desistiu', async function(motivo) {
+    if (motivo === null) return;
+    mostrarConfirm('Cancelar pedido', 'Cancelar este pedido e devolver o estoque?', async function() {
+      var resposta = await apiSend('/pedidos/' + id + '/cancelar', 'PATCH', { motivo: motivo });
+      if (resposta) {
+        ultimoPedidos = null;
+        await carregarTudo();
+        mostrarToast('sucesso', resposta.mensagem || 'Pedido cancelado.');
+      }
+    });
+  });
 }
 
 async function abrirComprovantesPedido(id) {
@@ -293,11 +329,12 @@ async function mudarStatus(id, status) {
 }
 
 async function excluirPedido(id) {
-  if (!confirm('Deseja excluir este pedido?')) return;
-  if (await apiDelete('/pedidos/' + id)) {
-    await carregarTudo();
-    mostrarToast('sucesso', 'Pedido excluido com sucesso!');
-  }
+  mostrarConfirm('Excluir pedido', 'Deseja excluir este pedido?', async function() {
+    if (await apiDelete('/pedidos/' + id)) {
+      await carregarTudo();
+      mostrarToast('sucesso', 'Pedido excluido com sucesso!');
+    }
+  });
 }
 
 async function excluirPedidosSelecionados() {
@@ -318,14 +355,15 @@ async function expirarPixPendentes() {
 }
 
 async function limparPedidosAntigos() {
-  if (!confirm('Remover pedidos entregues/cancelados com mais de 30 dias?')) return;
-  var ok = await apiDelete('/pedidos/limpeza/finalizados?dias=30');
-  if (ok) {
-    ultimoPedidos = null;
-    ultimoDashboard = null;
-    await carregarTudo();
-    mostrarToast('sucesso', 'Limpeza concluída.');
-  }
+  mostrarConfirm('Limpar finalizados', 'Remover pedidos entregues/cancelados com mais de 30 dias?', async function() {
+    var ok = await apiDelete('/pedidos/limpeza/finalizados?dias=30');
+    if (ok) {
+      ultimoPedidos = null;
+      ultimoDashboard = null;
+      await carregarTudo();
+      mostrarToast('sucesso', 'Limpeza concluída.');
+    }
+  });
 }
 
 async function abrirHistoricoPedido(id) {

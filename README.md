@@ -16,17 +16,17 @@ Sistema para distribuidora de água com pedido online, painel administrativo, te
   - informa endereço
   - informa número da casa separadamente
   - escolhe forma de pagamento
-  - recebe QR Code Pix quando escolhe Mercado Pago
+  - recebe a orientação de Pix manual quando escolhe Pix
   - recebe um código de entrega
   - acompanha status do pedido
   - vê a data de criação do pedido
-  - conversa com o atendimento pela aba Conversa
+  - conversa com o atendimento e envia comprovantes pela aba Conversa
 - **Admin:** `http://127.0.0.1:8000`
   - dashboard
   - CRUD de clientes, entregadores e produtos
   - gerenciamento de pedidos
   - atribuição de entregador para pedidos feitos no site
-  - acompanhamento de pagamento Pix
+  - confirmação manual de pagamento Pix
   - suporte por conversa com cliente
   - relatórios PDF/XLSX
 - **Entregador:** `http://127.0.0.1:8000/entregador.html`
@@ -115,7 +115,7 @@ C:\Users\Admin\Downloads\aqualog_projeto\iniciar_tudo.bat
 
 O site permite escolher **Pix**, **Dinheiro** ou **Cartão**.
 
-Com Pix, o sistema usa `MERCADO_PAGO_ACCESS_TOKEN` para gerar QR Code, Pix copia e cola e link de pagamento. O admin pode verificar o pagamento no painel. `PIX_CHAVE` fica apenas como fallback/manual.
+Com Pix, o fluxo principal é manual e gratuito: o cliente visualiza a chave configurada em `PIX_CHAVE`, envia o comprovante pelo suporte e o admin confirma o pagamento no painel. Integrações antigas com provedor de pagamento podem continuar existindo para pedidos legados, mas novos pedidos do site não dependem de Mercado Pago.
 
 ## Rodar Testes
 

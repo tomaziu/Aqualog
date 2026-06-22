@@ -303,7 +303,16 @@ def atualizar_pagamento_admin(id: int, admin=Depends(get_admin_user)):
         if not pedido:
             raise HTTPException(404, 'Pedido não encontrado')
         if not pedido.get('mp_order_id'):
-            raise HTTPException(400, 'Este pedido não possui Pix gerado pelo Mercado Pago')
+            dados = {'pagamento_status': 'pago', 'confirmacao_status': 'confirmado', 'modo': 'pix_manual'}
+            cur.execute('''UPDATE pedidos
+                           SET pagamento_status='pago', confirmacao_status='confirmado'
+                           WHERE id=%s''', (id,))
+            cur.execute('''INSERT INTO pedido_historico (pedido_id, status_anterior, status_novo, observacao)
+                           VALUES (%s, %s, %s, 'Pix manual confirmado pelo admin')''',
+                        (id, pedido['status'], pedido['status']))
+            con.commit()
+            notify('refresh', {'acao': 'pagamento_atualizado', 'pedido_id': id, 'status': 'pago', 'confirmacao_status': 'confirmado'})
+            return {'success': True, 'data': dados}
 
         dados = consultar_pix_order(pedido['mp_order_id'])
         dados['mp_order_id'] = dados.get('mp_order_id') or pedido['mp_order_id']

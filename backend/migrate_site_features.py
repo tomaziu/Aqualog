@@ -139,6 +139,8 @@ cur.execute("""
         cliente_id INT NOT NULL,
         autor ENUM('cliente', 'admin') NOT NULL,
         mensagem TEXT NOT NULL,
+        arquivo_nome VARCHAR(120),
+        arquivo_conteudo LONGTEXT,
         lida TINYINT(1) DEFAULT 0,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,
@@ -148,6 +150,8 @@ cur.execute("""
         INDEX idx_suporte_data (criado_em)
     ) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
 """)
+adicionar_coluna(cur, 'suporte_mensagens', 'arquivo_nome', 'VARCHAR(120) NULL AFTER mensagem')
+adicionar_coluna(cur, 'suporte_mensagens', 'arquivo_conteudo', 'LONGTEXT NULL AFTER arquivo_nome')
 print('OK - tabela suporte_mensagens pronta')
 
 cur.execute("""

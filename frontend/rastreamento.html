@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AquaLog - Rastrear entrega</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { background:#0a0e1a; min-height:100vh; padding:18px; color:#e2e8f0; font-family:"Outfit","Inter","Segoe UI",system-ui,sans-serif; }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(6, 182, 212, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(6, 182, 212, 0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.8), transparent 72%);
+    }
+    .track-page { max-width:1120px; margin:0 auto; position:relative; }
+    .track-hero { display:flex; justify-content:space-between; gap:18px; align-items:center; margin-bottom:18px; padding:clamp(18px,3vw,28px); border:1px solid rgba(148,163,184,.1); border-radius:12px; background:rgba(15,23,42,.5); backdrop-filter:blur(12px); }
+    .track-hero img { width:118px; border-radius:10px; padding:10px; background:rgba(255,255,255,.06); box-shadow:0 8px 32px rgba(0,0,0,.4); }
+    .track-hero h1 { margin:0; color:#f1f5f9; font-size:clamp(32px,5vw,56px); line-height:1; letter-spacing:0; }
+    .track-hero p { margin:6px 0 0; color:#94a3b8; font-size:15px; }
+    .track-search { display:grid; grid-template-columns:1fr 1fr auto; gap:12px; background:rgba(15,23,42,.5); padding:16px; border:1px solid rgba(148,163,184,.1); border-radius:12px; margin-bottom:18px; backdrop-filter:blur(8px); }
+    .track-search input { min-height:44px; border-color:rgba(148,163,184,.15); border-radius:8px; background:rgba(15,23,42,.7); color:#e2e8f0; }
+    .track-search input:focus { border-color:#06b6d4; box-shadow:0 0 0 3px rgba(6,182,212,.15); }
+    .track-search button { min-height:44px; border:0; border-radius:8px; background:linear-gradient(135deg,#06b6d4,#0891b2); color:#fff; font-weight:800; box-shadow:0 4px 16px rgba(6,182,212,.25); cursor:pointer; }
+    .track-search button:hover { background:linear-gradient(135deg,#22d3ee,#06b6d4); }
+    .track-shell { display:grid; grid-template-columns:minmax(0,1fr) minmax(300px,340px); gap:18px; }
+    #clienteTrackingMap { height:64vh; min-height:420px; border-radius:12px; overflow:hidden; background:linear-gradient(135deg,rgba(6,182,212,.04),rgba(139,92,246,.04)),repeating-linear-gradient(45deg,rgba(148,163,184,.03) 0 1px,transparent 1px 18px); border:1px solid rgba(148,163,184,.1); }
+    .track-side { background:rgba(15,23,42,.5); border-radius:12px; padding:20px; border:1px solid rgba(148,163,184,.1); backdrop-filter:blur(8px); }
+    .track-side h2 { margin-top:0; font-size:1.2rem; color:#f1f5f9; }
+    .track-row { padding:12px 0; border-bottom:1px solid rgba(148,163,184,.08); }
+    .track-row span { display:block; color:#64748b; font-size:.78rem; text-transform:uppercase; font-weight:800; letter-spacing:.2px; }
+    .track-row strong { display:block; margin-top:4px; color:#e2e8f0; }
+    .track-error { color:#f87171; margin-top:10px; font-weight:700; }
+    @media (max-width:800px) { .track-search, .track-shell, .track-hero { grid-template-columns:1fr; display:grid; } #clienteTrackingMap { height:52vh; } }
+  </style>
+</head>
+<body>
+  <main class="track-page">
+    <section class="track-hero">
+      <div>
+        <h1>Rastrear entrega</h1>
+        <p>Acompanhe a posição do entregador em tempo real.</p>
+      </div>
+      <p style="font-size:1.4rem;font-weight:700"><i class="ph ph-drop"></i> AquaLog</p>
+    </section>
+
+    <form id="clienteTrackingForm" class="track-search">
+      <input id="clienteTrackingId" type="number" min="1" placeholder="Número da entrega" required>
+      <input id="clienteTrackingTelefone" placeholder="Telefone usado no pedido" required>
+      <button>Rastrear</button>
+    </form>
+    <div id="clienteTrackingErro" class="track-error"></div>
+
+    <section class="track-shell">
+      <div id="clienteTrackingMap">
+        <div class="tracking-map-empty">Informe os dados da entrega para abrir o rastreamento.</div>
+      </div>
+      <aside class="track-side">
+        <h2 id="clienteTrackingTitulo">Entrega</h2>
+        <div class="track-row"><span>Status</span><strong id="clienteTrackingStatus">--</strong></div>
+        <div class="track-row"><span>Entregador</span><strong id="clienteTrackingDriver">--</strong></div>
+        <div class="track-row"><span>Veículo</span><strong id="clienteTrackingVeiculo">--</strong></div>
+        <div class="track-row"><span>ETA</span><strong id="clienteTrackingEta">--</strong></div>
+        <div class="track-row"><span>Distância restante</span><strong id="clienteTrackingDistancia">--</strong></div>
+        <div class="track-row"><span>Destino</span><strong id="clienteTrackingDestino">--</strong></div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="js/utils.js"></script>
+  <script src="js/tracking-cliente.js"></script>
+</body>
+</html>

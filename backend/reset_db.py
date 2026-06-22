@@ -149,6 +149,8 @@ cur.execute("""
         cliente_id INT NOT NULL,
         autor ENUM('cliente', 'admin') NOT NULL,
         mensagem TEXT NOT NULL,
+        arquivo_nome VARCHAR(120),
+        arquivo_conteudo LONGTEXT,
         lida TINYINT(1) DEFAULT 0,
         criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (pedido_id) REFERENCES pedidos(id) ON DELETE CASCADE,

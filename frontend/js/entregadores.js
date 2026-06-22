@@ -15,8 +15,9 @@ function filtrarEntregadores() {
   var dados = cacheEntregadores.filter(function(e) {
     return !q || e.nome.toLowerCase().includes(q) || e.veiculo.toLowerCase().includes(q) || e.telefone.toLowerCase().includes(q);
   });
-  window.idsEntregadoresVisiveis = dados.map(function(e) { return e.id; });
-  $('listaEntregadores').innerHTML = dados.map(function(e) {
+  var paginado = paginarDados('entregadores', dados);
+  window.idsEntregadoresVisiveis = paginado.dados.map(function(e) { return e.id; });
+  $('listaEntregadores').innerHTML = paginado.dados.map(function(e) {
     return '<tr>' +
       '<td class="bulk-cell">' + checkboxMassaHtml('entregadores', e.id, 'Selecionar entregador ' + e.nome) + '</td>' +
       '<td>' + e.id + '</td>' +
@@ -32,13 +33,13 @@ function filtrarEntregadores() {
           '<option value="disponivel"' + (e.status === 'disponivel' ? ' selected' : '') + '>Disponivel</option>' +
           '<option value="ocupado"' + (e.status === 'ocupado' ? ' selected' : '') + '>Ocupado</option>' +
         '</select>' +
-        (e.status === 'ocupado' ? '<span class="badge" style="background:#ffebee;color:#c62828;margin-left:6px;font-size:11px">ocupado</span>' : '<span class="badge" style="background:#e8f5e9;color:#2e7d32;margin-left:6px;font-size:11px">disponivel</span>') +
+        (e.status === 'ocupado' ? '<span class="badge" style="background:rgba(239,68,68,0.12);color:#f87171;margin-left:6px;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600">ocupado</span>' : '<span class="badge" style="background:rgba(16,185,129,0.12);color:#34d399;margin-left:6px;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600">disponivel</span>') +
       '</td>' +
       '<td class="acoes">' +
         '<button class="save" onclick="salvarEntregador(' + e.id + ')">Salvar</button>' +
         '<button class="delete" onclick="excluirEntregador(' + e.id + ')">Excluir</button>' +
       '</td></tr>';
-  }).join('');
+  }).join('') + renderPaginacao('entregadores');
   atualizarResumoSelecaoMassa('entregadores');
 }
 
@@ -60,11 +61,12 @@ async function salvarEntregador(id) {
 }
 
 async function excluirEntregador(id) {
-  if (!confirm('Deseja excluir este entregador?')) return;
-  if (await apiDelete('/entregadores/' + id)) {
-    await carregarTudo();
-    mostrarToast('sucesso', 'Entregador excluido com sucesso!');
-  }
+  mostrarConfirm('Excluir entregador', 'Deseja excluir este entregador?', async function() {
+    if (await apiDelete('/entregadores/' + id)) {
+      await carregarTudo();
+      mostrarToast('sucesso', 'Entregador excluido com sucesso!');
+    }
+  });
 }
 
 async function excluirEntregadoresSelecionados() {

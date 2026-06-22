@@ -1,6 +1,8 @@
 var chartStatus = null;
 var chartBairros = null;
 var ultimoDashboard = null;
+var dashboardAnterior = null;
+var lastUpdateTime = null;
 
 function corStatus(status) {
   var mapa = {
@@ -42,33 +44,107 @@ function renderMetricList(id, dados, renderer, vazio) {
   el.innerHTML = dados.map(renderer).join('');
 }
 
+function iniciarSkeletonDashboard() {
+  var ids = ['totalPedidos','pedidosSemEntregador','pedidosAguardandoPix','pedidosPagos','pedidosPixExpirados','totalVendido','vendasHoje','ticketMedio','vendasSemana','vendasMes','produtosEstoqueBaixo','tempoMedio'];
+  ids.forEach(function(id) {
+    var card = $(id);
+    if (card && card.closest('.card')) {
+      card.closest('.card').classList.add('card-skeleton');
+    }
+  });
+}
+
+function removerSkeletonDashboard() {
+  document.querySelectorAll('.card-skeleton').forEach(function(c) {
+    c.classList.remove('card-skeleton');
+  });
+}
+
+function atualizarTrend(id, atual, anterior) {
+  var el = $(id);
+  if (!el) return;
+  el.className = 'card-trend';
+  if (anterior === undefined || anterior === null) return;
+  var a = Number(atual) || 0;
+  var b = Number(anterior) || 0;
+  if (b === 0 && a === 0) return;
+  if (b === 0) { el.classList.add('up'); el.textContent = '\u25B2 novo'; return; }
+  var pct = ((a - b) / b) * 100;
+  if (pct > 0) { el.classList.add('up'); el.textContent = '\u25B2 +' + Math.round(pct) + '%'; }
+  else if (pct < 0) { el.classList.add('down'); el.textContent = '\u25BC ' + Math.round(pct) + '%'; }
+  else { el.classList.add('neutral'); el.textContent = '\u2500 0%'; }
+}
+
+function atualizarLastUpdate() {
+  var el = $('lastUpdate');
+  if (!el || !lastUpdateTime) return;
+  var diff = Math.floor((Date.now() - lastUpdateTime) / 1000);
+  var texto;
+  if (diff < 5) texto = 'Atualizado agora';
+  else if (diff < 60) texto = 'Atualizado h\u00e1 ' + diff + 's';
+  else texto = 'Atualizado h\u00e1 ' + Math.floor(diff / 60) + 'min';
+  el.innerHTML = '<span class="dot"></span>' + texto;
+}
+
+setInterval(atualizarLastUpdate, 5000);
+
 async function carregarDashboard() {
+  iniciarSkeletonDashboard();
   var d = await apiGet('/dashboard');
+  removerSkeletonDashboard();
   if (!d || Array.isArray(d)) return;
 
-  // Verifica se os dados mudaram
   var dadosAtuais = JSON.stringify(d);
-  if (ultimoDashboard === dadosAtuais) {
-    return; // Dados não mudaram, não atualiza
-  }
+  if (ultimoDashboard === dadosAtuais) return;
+  dashboardAnterior = ultimoDashboard ? JSON.parse(ultimoDashboard) : null;
   ultimoDashboard = dadosAtuais;
+  lastUpdateTime = Date.now();
+  atualizarLastUpdate();
 
-  $('totalPedidos').textContent = d.total_pedidos ?? 0;
-  $('tempoMedio').textContent = (d.tempo_medio_minutos ?? 0) + ' min';
+  var ids = ['totalPedidos','pedidosSemEntregador','pedidosAguardandoPix','pedidosPagos','pedidosPixExpirados','totalVendido','vendasHoje','ticketMedio','vendasSemana','vendasMes','produtosEstoqueBaixo','tempoMedio'];
+
+  function setVal(id, val) {
+    var el = $(id);
+    if (!el) return;
+    el.textContent = val;
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  setVal('totalPedidos', d.total_pedidos ?? 0);
+  setVal('tempoMedio', (d.tempo_medio_minutos ?? 0) + ' min');
   var indicadores = d.indicadores || {};
-  $('pedidosAguardandoPix').textContent = indicadores.aguardando_pix ?? 0;
-  $('pedidosPagos').textContent = indicadores.pagos ?? 0;
-  $('pedidosSemEntregador').textContent = indicadores.sem_entregador ?? 0;
-  $('pedidosPixExpirados').textContent = indicadores.pix_expirados ?? 0;
+  setVal('pedidosAguardandoPix', indicadores.aguardando_pix ?? 0);
+  setVal('pedidosPagos', indicadores.pagos ?? 0);
+  setVal('pedidosSemEntregador', indicadores.sem_entregador ?? 0);
+  setVal('pedidosPixExpirados', indicadores.pix_expirados ?? 0);
   var financeiro = d.financeiro || {};
   var estoqueBaixo = d.estoque_baixo || [];
-  $('totalVendido').textContent = dinheiroAdmin(financeiro.total_vendido);
-  $('ticketMedio').textContent = dinheiroAdmin(financeiro.ticket_medio);
+  setVal('totalVendido', dinheiroAdmin(financeiro.total_vendido));
+  setVal('ticketMedio', dinheiroAdmin(financeiro.ticket_medio));
   var periodos = d.financeiro_periodos || {};
-  $('vendasHoje').textContent = dinheiroAdmin(periodos.hoje && periodos.hoje.total);
-  $('vendasSemana').textContent = dinheiroAdmin(periodos.semana && periodos.semana.total);
-  $('vendasMes').textContent = dinheiroAdmin(periodos.mes && periodos.mes.total);
-  $('produtosEstoqueBaixo').textContent = estoqueBaixo.length;
+  setVal('vendasHoje', dinheiroAdmin(periodos.hoje && periodos.hoje.total));
+  setVal('vendasSemana', dinheiroAdmin(periodos.semana && periodos.semana.total));
+  setVal('vendasMes', dinheiroAdmin(periodos.mes && periodos.mes.total));
+  setVal('produtosEstoqueBaixo', estoqueBaixo.length);
+
+  var ant = dashboardAnterior || {};
+  var antInd = ant.indicadores || {};
+  var antFin = ant.financeiro || {};
+  var antPer = ant.financeiro_periodos || {};
+  atualizarTrend('trendTotalPedidos', d.total_pedidos, ant.total_pedidos);
+  atualizarTrend('trendSemEntregador', indicadores.sem_entregador, antInd.sem_entregador);
+  atualizarTrend('trendAguardandoPix', indicadores.aguardando_pix, antInd.aguardando_pix);
+  atualizarTrend('trendPagos', indicadores.pagos, antInd.pagos);
+  atualizarTrend('trendExpirados', indicadores.pix_expirados, antInd.pix_expirados);
+  atualizarTrend('trendTotalVendido', financeiro.total_vendido, antFin.total_vendido);
+  atualizarTrend('trendVendasHoje', periodos.hoje && periodos.hoje.total, antPer.hoje && antPer.hoje.total);
+  atualizarTrend('trendTicketMedio', financeiro.ticket_medio, antFin.ticket_medio);
+  atualizarTrend('trendVendasSemana', periodos.semana && periodos.semana.total, antPer.semana && antPer.semana.total);
+  atualizarTrend('trendVendasMes', periodos.mes && periodos.mes.total, antPer.mes && antPer.mes.total);
+  atualizarTrend('trendEstoqueBaixo', estoqueBaixo.length, ant.estoque_baixo ? ant.estoque_baixo.length : undefined);
+  atualizarTrend('trendTempoMedio', d.tempo_medio_minutos, ant.tempo_medio_minutos);
 
   renderMetricList('rankingProdutos', d.produtos_mais_vendidos || [], function(p, idx) {
     return '<div class="metric-row">' +

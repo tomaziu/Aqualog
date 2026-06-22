@@ -1,4 +1,62 @@
+var _confirmCb = null;
+var _promptCb = null;
+
+function mostrarConfirm(titulo, mensagem, cb) {
+  $('confirmTitle').textContent = titulo;
+  $('confirmMsg').textContent = mensagem;
+  _confirmCb = cb;
+  $('confirmModal').style.zIndex = '10003';
+  $('confirmModal').classList.add('ativo');
+}
+
+function fecharConfirm() {
+  $('confirmModal').classList.remove('ativo');
+  $('confirmModal').style.zIndex = '';
+  _confirmCb = null;
+}
+
+function executarConfirm() {
+  if (_confirmCb) _confirmCb();
+  fecharConfirm();
+}
+
+function mostrarPrompt(titulo, mensagem, valorPadrao, cb) {
+  $('promptTitle').textContent = titulo;
+  $('promptMsg').textContent = mensagem;
+  $('promptInput').value = valorPadrao || '';
+  _promptCb = cb;
+  $('promptModal').style.zIndex = '10003';
+  $('promptModal').classList.add('ativo');
+  $('promptInput').focus();
+}
+
+function fecharPrompt() {
+  $('promptModal').classList.remove('ativo');
+  $('promptModal').style.zIndex = '';
+  _promptCb = null;
+}
+
+function executarPrompt() {
+  var valor = $('promptInput').value;
+  if (_promptCb) _promptCb(valor);
+  fecharPrompt();
+}
+
+function salvarFiltro(id) {
+  var el = $(id);
+  if (el) localStorage.setItem('filtro_' + id, el.value);
+}
+
+function restaurarFiltros() {
+  ['filtroCliente','filtroEntregador','filtroProduto','filtroPedido','filtroSuporte','filtroCupom'].forEach(function(id) {
+    var el = $(id);
+    var val = localStorage.getItem('filtro_' + id);
+    if (el && val !== null) el.value = val;
+  });
+}
+
 async function carregarTudo() {
+  restaurarFiltros();
   if (typeof carregarConfiguracoes === 'function') {
     await carregarConfiguracoes();
   }
@@ -267,7 +325,9 @@ function iniciarSSEAdmin() {
         if (!isEditing) {
           ultimoPedidos = null;
           ultimoDashboard = null;
-          carregarTudo();
+          carregarTudo().then(function() {
+            mostrarToast('sucesso', 'Dados atualizados em tempo real.');
+          });
         }
       }
     } catch (err) {
