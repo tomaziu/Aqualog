@@ -301,7 +301,10 @@
           <h2><i class="ph ph-map-trifold"></i> GPS / Rastreamento</h2>
           <p>Acompanhe a localização dos entregadores e entregas em tempo real.</p>
         </div>
-        <button class="secondary-action" onclick="carregarGpsAdmin()"><i class="ph ph-arrow-clockwise"></i> Atualizar</button>
+        <div style="display:flex;gap:8px">
+          <button class="secondary-action" onclick="limparEntregasAntigasGps()"><i class="ph ph-trash"></i> Limpar antigos</button>
+          <button class="secondary-action" onclick="carregarGpsAdmin()"><i class="ph ph-arrow-clockwise"></i> Atualizar</button>
+        </div>
       </div>
       <div class="gps-admin-layout">
         <div id="adminTrackingMap" class="gps-admin-map">

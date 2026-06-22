@@ -197,3 +197,13 @@ function pararGpsAdmin() {
     adminGpsIntervalo = null;
   }
 }
+
+async function limparEntregasAntigasGps() {
+  mostrarConfirm('Limpar rastreamentos antigos', 'Removerá todas as entregas finalizadas ou canceladas e seu histórico de localização. Continuar?', async function() {
+    var r = await apiSend('/deliveries/old', 'DELETE');
+    if (r) {
+      mostrarToast('sucesso', r.entregas_removidas + ' entregas, ' + r.localizacoes_removidas + ' localizações e ' + r.historico_removido + ' registros de histórico removidos.');
+      carregarGpsAdmin();
+    }
+  });
+}

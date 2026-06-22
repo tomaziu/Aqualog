@@ -536,3 +536,21 @@ async def _websocket_autorizado(delivery_id: int, token: str = None, telefone: s
     finally:
         cur.close()
         con.close()
+
+
+@router.delete('/deliveries/old')
+def limpar_entregas_antiguas(admin=Depends(get_admin_user)):
+    con = get_connection()
+    cur = con.cursor(dictionary=True)
+    try:
+        cur.execute('DELETE FROM delivery_locations WHERE delivery_id IN (SELECT id FROM deliveries WHERE status IN ("entregue","cancelado"))')
+        locs_removidas = cur.rowcount
+        cur.execute('DELETE FROM delivery_status_history WHERE delivery_id IN (SELECT id FROM deliveries WHERE status IN ("entregue","cancelado"))')
+        hist_removidos = cur.rowcount
+        cur.execute('DELETE FROM deliveries WHERE status IN ("entregue","cancelado")')
+        entregas_removidas = cur.rowcount
+        con.commit()
+        return {'success': True, 'data': {'entregas_removidas': entregas_removidas, 'localizacoes_removidas': locs_removidas, 'historico_removido': hist_removidos}}
+    finally:
+        cur.close()
+        con.close()
