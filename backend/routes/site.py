@@ -519,7 +519,8 @@ def testar_webhook_mercado_pago():
 def criar_pedido_site(pedido: PedidoSite, request: Request):
     con = get_connection(); cur = con.cursor(dictionary=True)
     try:
-        if pedido.forma_pagamento.strip().lower() != 'pix':
+        forma = pedido.forma_pagamento.strip().lower()
+        if forma != 'pix' and forma != 'pagamento teste':
             raise HTTPException(400, 'No site do cliente, o pagamento é feito somente por Pix.')
 
         loja_ok, motivo_fechado = _loja_pode_receber_pedido(cur)
