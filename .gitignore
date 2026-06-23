@@ -19,3 +19,26 @@ stderr*.txt
 
 node_modules/
 .DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Backups
+*.bak
+*.backup
+*.sql.bak
+
+# Docker volumes
+docker-data/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
