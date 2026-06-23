@@ -162,7 +162,7 @@ async function excluirSelecionadosMassa(grupo, nomePlural, urlBase, aposExcluir,
     mostrarToast('erro', 'Selecione pelo menos 2 itens para excluir.');
     return;
   }
-  mostrarConfirm(verbo + ' em massa', verbo + ' ' + ids.length + ' ' + nomePlural + '?', async function() {
+  await mostrarConfirm(verbo + ' em massa', verbo + ' ' + ids.length + ' ' + nomePlural + '?', async function() {
     var excluidos = 0;
     var falhas = 0;
     document.body.classList.add('loading');

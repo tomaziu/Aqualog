@@ -200,7 +200,7 @@ function focarEntregaAdmin(id, lat, lng) {
 }
 
 async function deletarEntregaGps(id) {
-  mostrarConfirm('Remover rastreamento', 'Remover a entrega #' + id + ' do mapa?', async function() {
+  await mostrarConfirm('Remover rastreamento', 'Remover a entrega #' + id + ' do mapa?', async function() {
     var r = await apiSend('/deliveries/' + id, 'DELETE');
     if (r) {
       if (adminMarkers['e_' + id]) { adminMap.removeLayer(adminMarkers['e_' + id]); delete adminMarkers['e_' + id]; }
@@ -223,7 +223,7 @@ function pararGpsAdmin() {
 }
 
 async function limparEntregasAntigasGps() {
-  mostrarConfirm('Limpar antigos', 'Remover entregas finalizadas/canceladas?', async function() {
+  await mostrarConfirm('Limpar antigos', 'Remover entregas finalizadas/canceladas?', async function() {
     var r = await apiSend('/deliveries/old', 'DELETE');
     if (r) {
       mostrarToast('sucesso', r.entregas_removidas + ' entregas removidas.');

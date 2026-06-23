@@ -140,7 +140,7 @@ async function salvarCliente(id) {
 }
 
 async function excluirCliente(id) {
-  mostrarConfirm('Excluir cliente', 'Deseja excluir este cliente?', async function() {
+  await mostrarConfirm('Excluir cliente', 'Deseja excluir este cliente?', async function() {
     if (await apiDelete('/clientes/' + id)) {
       await carregarTudo();
       mostrarToast('sucesso', 'Cliente excluido com sucesso!');

@@ -81,7 +81,7 @@ async function salvarProduto(id) {
 }
 
 async function excluirProduto(id) {
-  mostrarConfirm('Inativar produto', 'Inativar este produto? Ele sairá da loja do cliente, mas os pedidos antigos continuam salvos.', async function() {
+  await mostrarConfirm('Inativar produto', 'Inativar este produto? Ele sairá da loja do cliente, mas os pedidos antigos continuam salvos.', async function() {
     if (await apiDelete('/produtos/' + id)) {
       await carregarTudo();
       mostrarToast('sucesso', 'Produto inativado com sucesso!');
@@ -267,7 +267,7 @@ async function aplicarCrop() {
 
 async function removerImagemProduto() {
   if (!imageModalProdutoId) return;
-  mostrarConfirm('Remover imagem', 'Remover a imagem deste produto?', async function() {
+  await mostrarConfirm('Remover imagem', 'Remover a imagem deste produto?', async function() {
     var resposta = await apiDelete('/produtos/' + imageModalProdutoId + '/imagem');
     if (resposta !== false) {
       mostrarToast('sucesso', 'Imagem removida!');

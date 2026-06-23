@@ -61,7 +61,7 @@ async function salvarEntregador(id) {
 }
 
 async function excluirEntregador(id) {
-  mostrarConfirm('Excluir entregador', 'Deseja excluir este entregador?', async function() {
+  await mostrarConfirm('Excluir entregador', 'Deseja excluir este entregador?', async function() {
     if (await apiDelete('/entregadores/' + id)) {
       await carregarTudo();
       mostrarToast('sucesso', 'Entregador excluido com sucesso!');
