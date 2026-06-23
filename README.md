@@ -15,8 +15,7 @@ Sistema para distribuidora de água com pedido online, painel administrativo, te
   - escolhe produto
   - informa endereço
   - informa número da casa separadamente
-  - escolhe forma de pagamento
-  - recebe a orientação de Pix manual quando escolhe Pix
+  - paga via Pix (chave manual)
   - recebe um código de entrega
   - acompanha status do pedido
   - vê a data de criação do pedido
@@ -96,7 +95,6 @@ DB_NAME=aqualog
 JWT_SECRET=<defina-aqui>
 ADMIN_PASSWORD=<defina-aqui>
 PIX_CHAVE=<defina-aqui>
-MERCADO_PAGO_ACCESS_TOKEN=
 ```
 
 ### 3. Rodar API
@@ -113,9 +111,7 @@ C:\Users\Admin\Downloads\aqualog_projeto\iniciar_tudo.bat
 
 ## Pagamento
 
-O site permite escolher **Pix**, **Dinheiro** ou **Cartão**.
-
-Com Pix, o fluxo principal é manual e gratuito: o cliente visualiza a chave configurada em `PIX_CHAVE`, envia o comprovante pelo suporte e o admin confirma o pagamento no painel. Integrações antigas com provedor de pagamento podem continuar existindo para pedidos legados, mas novos pedidos do site não dependem de Mercado Pago.
+O pagamento é feito exclusivamente por **Pix**. O cliente visualiza a chave configurada em `PIX_CHAVE`, envia o comprovante pelo suporte e o admin confirma o pagamento no painel.
 
 ## Rodar Testes
 
