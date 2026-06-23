@@ -91,11 +91,11 @@ Configure o `.env`:
 ```env
 DB_HOST=localhost
 DB_USER=root
-DB_PASSWORD=sua_senha
+DB_PASSWORD=<defina-aqui>
 DB_NAME=aqualog
-JWT_SECRET=troque-este-segredo
-ADMIN_PASSWORD=admin123
-PIX_CHAVE=sua-chave-pix
+JWT_SECRET=<defina-aqui>
+ADMIN_PASSWORD=<defina-aqui>
+PIX_CHAVE=<defina-aqui>
 MERCADO_PAGO_ACCESS_TOKEN=
 ```
 
