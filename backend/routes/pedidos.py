@@ -57,6 +57,34 @@ def _registrar_movimento_estoque(cur, produto_id: int, pedido_id, tipo: str, qua
                 (produto_id, pedido_id, tipo, quantidade, estoque_anterior, estoque_novo, observacao))
 
 
+def _criar_delivery_para_pedido(cur, pedido_id: int, entregador_id: int):
+    cur.execute('SELECT EXISTS(SELECT 1 FROM deliveries WHERE pedido_id=%s AND status NOT IN ("entregue","cancelado")) AS existe', (pedido_id,))
+    if cur.fetchone()['existe']:
+        return
+    cur.execute('''SELECT p.id, p.cliente_id,
+                          c.endereco, c.numero_casa, c.bairro, c.referencia,
+                          c.latitude AS cliente_latitude, c.longitude AS cliente_longitude
+                   FROM pedidos p JOIN clientes c ON c.id = p.cliente_id
+                   WHERE p.id=%s''', (pedido_id,))
+    pedido = cur.fetchone()
+    if not pedido:
+        return
+    destino = ', '.join([str(x) for x in [pedido.get('endereco'), pedido.get('numero_casa'), pedido.get('bairro')] if x])
+    destino_lat = float(pedido['cliente_latitude']) if pedido.get('cliente_latitude') else -3.5
+    destino_lng = float(pedido['cliente_longitude']) if pedido.get('cliente_longitude') else -43.5
+    cur.execute('''INSERT INTO deliveries
+                   (pedido_id, cliente_id, entregador_id, origem_endereco, origem_latitude, origem_longitude,
+                    destino_endereco, destino_latitude, destino_longitude, status, observacoes)
+                   VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,'aguardando_coleta','Criado automaticamente')''',
+                (pedido_id, pedido['cliente_id'], entregador_id,
+                 'Loja', -3.5, -43.5, destino, destino_lat, destino_lng))
+    delivery_id = cur.lastrowid
+    cur.execute('''INSERT INTO delivery_status_history
+                   (delivery_id, status_old, status_new, actor_type, actor_id, note)
+                   VALUES (%s, NULL, 'aguardando_coleta', 'system', 0, 'Delivery criado automaticamente ao sair para entrega')''',
+                (delivery_id,))
+
+
 def _devolver_estoque(cur, pedido: dict):
     if pedido.get('status') in ('cancelado', 'entregue'):
         return
@@ -408,6 +436,7 @@ def atualizar_status(id: int, status: str = Query(...), admin=Depends(get_admin_
 
     if entregador_id and status == 'saiu_para_entrega':
         cur.execute('UPDATE entregadores SET status=%s WHERE id=%s', ('ocupado', entregador_id))
+        _criar_delivery_para_pedido(cur, id, entregador_id)
     elif entregador_id and status in ('entregue', 'cancelado'):
         _liberar_entregador_se_sem_ativos(cur, entregador_id)
 
@@ -462,6 +491,7 @@ def atualizar_status_entregador(id: int, status: str = Query(...), codigo: Optio
 
     if entregador_id and status == 'saiu_para_entrega':
         cur.execute('UPDATE entregadores SET status=%s WHERE id=%s', ('ocupado', entregador_id))
+        _criar_delivery_para_pedido(cur, id, entregador_id)
     elif entregador_id and status in ('entregue', 'cancelado'):
         cur.execute("SELECT COUNT(*) total FROM pedidos WHERE entregador_id=%s AND status NOT IN ('entregue','cancelado')", (entregador_id,))
         ativos = cur.fetchone()['total']

@@ -11,7 +11,7 @@ from jose import JWTError, jwt
 from auth import ALGORITHM, SECRET_KEY, get_admin_user, get_entregador_user
 from database import get_connection
 from delivery_realtime import connect, disconnect, notify_delivery
-from models import DeliveryAssignDriver, DeliveryCreate, DeliveryCreateFromPedido, DeliveryLocationUpdate, DeliveryStatusUpdate
+from models import ClientLocationUpdate, DeliveryAssignDriver, DeliveryCreate, DeliveryCreateFromPedido, DeliveryLocationUpdate, DeliveryStatusUpdate
 from sse_manager import notify as notify_sse
 
 router = APIRouter()
@@ -321,6 +321,31 @@ def obter_entrega_cliente(delivery_id: int, telefone: str = Query(...)):
         con.close()
 
 
+@router.post('/site/deliveries/{delivery_id}/client-location')
+def enviar_localizacao_cliente(delivery_id: int, dados: ClientLocationUpdate, telefone: str = Query(...)):
+    con = get_connection()
+    cur = con.cursor(dictionary=True)
+    try:
+        entrega = buscar_entrega(cur, delivery_id)
+        if not entrega:
+            raise HTTPException(404, 'Entrega não encontrada')
+        digits_request = ''.join(ch for ch in telefone if ch.isdigit())
+        digits_cliente = ''.join(ch for ch in (entrega.get('cliente_telefone') or '') if ch.isdigit())
+        if not digits_request or not digits_cliente.endswith(digits_request[-8:]):
+            raise HTTPException(403, 'Entrega não autorizada para este telefone')
+
+        cur.execute('''UPDATE deliveries
+                       SET cliente_atual_latitude=%s, cliente_atual_longitude=%s, cliente_atual_accuracy=%s, updated_at=NOW()
+                       WHERE id=%s''',
+                    (dados.latitude, dados.longitude, dados.accuracy, delivery_id))
+        con.commit()
+        publicar_entrega(cur, delivery_id, 'client_location_updated')
+        return {'success': True}
+    finally:
+        cur.close()
+        con.close()
+
+
 @router.patch('/deliveries/{delivery_id}/driver')
 def associar_entregador(delivery_id: int, dados: DeliveryAssignDriver, admin=Depends(get_admin_user)):
     con = get_connection()
@@ -508,6 +533,41 @@ async def _websocket_autorizado(delivery_id: int, token: str = None, telefone: s
             cli = ''.join(ch for ch in (entrega.get('cliente_telefone') or '') if ch.isdigit())
             return bool(req and cli.endswith(req[-8:]))
         return False
+    finally:
+        cur.close()
+        con.close()
+
+
+@router.delete('/deliveries/old')
+def limpar_entregas_antiguas(admin=Depends(get_admin_user)):
+    con = get_connection()
+    cur = con.cursor(dictionary=True)
+    try:
+        cur.execute('DELETE FROM delivery_locations WHERE delivery_id IN (SELECT id FROM deliveries WHERE status IN ("entregue","cancelado"))')
+        locs_removidas = cur.rowcount
+        cur.execute('DELETE FROM delivery_status_history WHERE delivery_id IN (SELECT id FROM deliveries WHERE status IN ("entregue","cancelado"))')
+        hist_removidos = cur.rowcount
+        cur.execute('DELETE FROM deliveries WHERE status IN ("entregue","cancelado")')
+        entregas_removidas = cur.rowcount
+        con.commit()
+        return {'success': True, 'data': {'entregas_removidas': entregas_removidas, 'localizacoes_removidas': locs_removidas, 'historico_removido': hist_removidos}}
+    finally:
+        cur.close()
+        con.close()
+
+
+@router.delete('/deliveries/{delivery_id}')
+def deletar_entrega(delivery_id: int, admin=Depends(get_admin_user)):
+    con = get_connection()
+    cur = con.cursor(dictionary=True)
+    try:
+        cur.execute('DELETE FROM delivery_locations WHERE delivery_id=%s', (delivery_id,))
+        cur.execute('DELETE FROM delivery_status_history WHERE delivery_id=%s', (delivery_id,))
+        cur.execute('DELETE FROM deliveries WHERE id=%s', (delivery_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(404, 'Entrega não encontrada')
+        con.commit()
+        return {'success': True, 'data': {'mensagem': 'Entrega removida'}}
     finally:
         cur.close()
         con.close()

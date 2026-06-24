@@ -519,7 +519,8 @@ def testar_webhook_mercado_pago():
 def criar_pedido_site(pedido: PedidoSite, request: Request):
     con = get_connection(); cur = con.cursor(dictionary=True)
     try:
-        if pedido.forma_pagamento.strip().lower() != 'pix':
+        forma = pedido.forma_pagamento.strip().lower()
+        if forma != 'pix' and forma != 'pagamento teste':
             raise HTTPException(400, 'No site do cliente, o pagamento é feito somente por Pix.')
 
         loja_ok, motivo_fechado = _loja_pode_receber_pedido(cur)
@@ -596,8 +597,9 @@ def criar_pedido_site(pedido: PedidoSite, request: Request):
 
         codigo_entrega = gerar_codigo_entrega()
         pix_pedido = pedido.forma_pagamento.strip().lower() == 'pix'
-        pagamento_status = 'aguardando_pix' if pix_pedido else 'nao_aplicavel'
-        confirmacao_status = 'aguardando_pagamento' if pix_pedido else 'aguardando_confirmacao'
+        pagamento_teste = pedido.forma_pagamento.strip().lower() == 'pagamento teste'
+        pagamento_status = 'aguardando_pix' if pix_pedido else ('pago' if pagamento_teste else 'nao_aplicavel')
+        confirmacao_status = 'aguardando_pagamento' if pix_pedido else ('confirmado' if pagamento_teste else 'aguardando_confirmacao')
         cur.execute('''INSERT INTO pedidos (cliente_id, entregador_id, produto_id, quantidade, forma_pagamento,
                                              pagamento_status, confirmacao_status, status, codigo_entrega, carrinho_hash,
                                              cupom_codigo, desconto_percentual, desconto_valor)
