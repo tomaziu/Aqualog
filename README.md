@@ -109,6 +109,30 @@ Ou use:
 C:\Users\Admin\Downloads\aqualog_projeto\iniciar_tudo.bat
 ```
 
+### 4. Docker (alternativa)
+
+Pré-requisito: [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado e rodando.
+
+```bash
+# Criar o arquivo .env
+cp backend/.env.example backend/.env
+# Edite com suas credenciais
+
+# Subir tudo (backend + MySQL)
+docker compose up --build
+```
+
+Acesse: `http://localhost:8000`
+
+Comandos úteis:
+
+```bash
+docker compose up --build -d    # rodar em background
+docker compose down             # parar e remover containers
+docker compose logs backend     # ver logs do backend
+docker compose restart backend  # reiniciar backend
+```
+
 ## Pagamento
 
 O pagamento é feito exclusivamente por **Pix**. O cliente visualiza a chave configurada em `PIX_CHAVE`, envia o comprovante pelo suporte e o admin confirma o pagamento no painel.
