@@ -231,6 +231,7 @@ function filtrarPedidos() {
           '<option value="">Alterar status</option>' +
           opcoesStatus(p) +
         '</select>' +
+        (p.status === 'saiu_para_entrega' ? '<a href="rastreamento.html?entrega=' + encodeURIComponent(p.id) + '&telefone=' + encodeURIComponent(p.telefone || '') + '" target="_blank" class="secondary-action" style="text-decoration:none;display:inline-flex;align-items:center">Rastrear</a>' : '') +
         '<button class="secondary-action" onclick="abrirHistoricoPedido(' + p.id + ')">Histórico</button>' +
         cancelarBotao +
         '<button class="delete" onclick="excluirPedido(' + p.id + ')">Excluir</button>' +
@@ -270,7 +271,7 @@ async function atualizarPagamento(id) {
 async function cancelarPedido(id) {
   mostrarPrompt('Cancelar pedido', 'Motivo do cancelamento:', 'Cliente desistiu', async function(motivo) {
     if (motivo === null) return;
-    mostrarConfirm('Cancelar pedido', 'Cancelar este pedido e devolver o estoque?', async function() {
+    await mostrarConfirm('Cancelar pedido', 'Cancelar este pedido e devolver o estoque?', async function() {
       var resposta = await apiSend('/pedidos/' + id + '/cancelar', 'PATCH', { motivo: motivo });
       if (resposta) {
         ultimoPedidos = null;
@@ -329,7 +330,7 @@ async function mudarStatus(id, status) {
 }
 
 async function excluirPedido(id) {
-  mostrarConfirm('Excluir pedido', 'Deseja excluir este pedido?', async function() {
+  await mostrarConfirm('Excluir pedido', 'Deseja excluir este pedido?', async function() {
     if (await apiDelete('/pedidos/' + id)) {
       await carregarTudo();
       mostrarToast('sucesso', 'Pedido excluido com sucesso!');
@@ -355,7 +356,7 @@ async function expirarPixPendentes() {
 }
 
 async function limparPedidosAntigos() {
-  mostrarConfirm('Limpar finalizados', 'Remover pedidos entregues/cancelados com mais de 30 dias?', async function() {
+  await mostrarConfirm('Limpar finalizados', 'Remover pedidos entregues/cancelados com mais de 30 dias?', async function() {
     var ok = await apiDelete('/pedidos/limpeza/finalizados?dias=30');
     if (ok) {
       ultimoPedidos = null;

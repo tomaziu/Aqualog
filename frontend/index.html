@@ -8,54 +8,80 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&family=Oswald:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.0.3/src/regular/style.css">
   <link rel="stylesheet" href="style.css">
   <style>
     #tela-login-admin {
       position: fixed; inset: 0; z-index: 9999;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background:
-        radial-gradient(circle at 50% 20%, rgba(6, 182, 212, 0.12), transparent 40vw),
-        linear-gradient(180deg, #0a0e1a 0%, #0f172a 100%);
+      background: var(--navy, #0a0e2e);
     }
     #tela-login-admin .box {
-      background: rgba(15, 23, 42, 0.8); padding: 40px 36px; border-radius: 16px;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(148, 163, 184, 0.08);
+      background: var(--box-bg, #111a3e); padding: 40px 36px;
+      border: 2px solid rgba(0,229,255,0.2);
       width: 100%; max-width: 360px; text-align: center;
-      backdrop-filter: blur(16px);
+      clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
     }
-    #tela-login-admin h1 { margin: 0 0 4px; color: #06b6d4; font-size: 26px; font-weight: 700; }
-    #tela-login-admin p { color: #64748b; margin: 0 0 24px; font-size: 14px; }
+    #tela-login-admin h1 {
+      margin: 0 0 8px;
+      font-family: 'VT323', monospace;
+      color: #00e5ff; font-size: 32px; font-weight: bold;
+      letter-spacing: 3px; text-shadow: 0 0 8px rgba(0,229,255,0.5);
+    }
+    #tela-login-admin p {
+      color: #8892b0; margin: 0 0 24px;
+      font-family: 'Share Tech Mono', monospace; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 2px;
+    }
     #tela-login-admin input {
       width: 100%; padding: 12px 16px; font-size: .95rem; text-align: center;
-      border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 10px;
-      margin-bottom: 14px; outline: none; box-sizing: border-box; transition: .2s ease;
-      background: rgba(15, 23, 42, 0.8); color: #e2e8f0;
+      border: 1px solid rgba(0,229,255,0.15); border-radius: 0;
+      margin-bottom: 14px; outline: none; box-sizing: border-box;
+      background: var(--stripe, #0d1435); color: #e8ecf8;
+      font-family: 'Share Tech Mono', monospace;
     }
-    #tela-login-admin input:focus { border-color: #06b6d4; box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15); }
+    #tela-login-admin input:focus { border-color: #00e5ff; box-shadow: 0 0 0 2px rgba(0,229,255,0.1); }
     #tela-login-admin button {
       width: 100%; padding: 12px; font-size: .95rem;
-      background: linear-gradient(135deg, #06b6d4, #0891b2);
-      color: #fff; border: none; border-radius: 10px; cursor: pointer;
-      font-weight: 600; transition: .2s ease;
-      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.25);
+      background: #00e5ff;
+      color: #0a0e2e; border: none; cursor: pointer;
+      font-family: 'Share Tech Mono', monospace; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
     }
-    #tela-login-admin button:hover {
-      background: linear-gradient(135deg, #22d3ee, #06b6d4);
-      box-shadow: 0 6px 24px rgba(6, 182, 212, 0.35); transform: translateY(-1px);
-    }
-    #tela-login-admin button:active { transform: translateY(0); }
+    #tela-login-admin button:hover { background: #ffd600; }
     #tela-login-admin .erro { color: #f87171; margin-top: 12px; font-size: .85rem; font-weight: 500; }
-    #hamburger { display: none; position: fixed; top: 12px; left: 12px; z-index: 1000; background: rgba(15, 23, 42, 0.8); color: #06b6d4; border: 1px solid rgba(148, 163, 184, 0.15); font-size: 22px; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); transition: .2s ease; backdrop-filter: blur(12px); }
-    #hamburger:hover { background: rgba(6, 182, 212, 0.12); border-color: #06b6d4; }
+    #hamburger {
+      display: none; position: fixed; top: 12px; left: 12px; z-index: 1000;
+      background: rgba(17,26,62,0.9); color: #00e5ff;
+      border: 1px solid rgba(0,229,255,0.2); font-size: 22px;
+      width: 40px; height: 40px; border-radius: 0; cursor: pointer;
+      align-items: center; justify-content: center;
+      backdrop-filter: blur(12px);
+    }
+    #hamburger:hover { background: rgba(0,229,255,0.1); border-color: #00e5ff; }
     #toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
-    .toast { padding: 14px 20px; border-radius: 10px; color: #fff; font-size: 14px; font-weight: 500; box-shadow: 0 8px 20px rgba(0,0,0,.3); transition: opacity .3s ease, transform .3s ease; max-width: 380px; word-break: break-word; }
-    .toast-sucesso { background: #16a34a; }
+    .toast {
+      padding: 14px 20px; border-radius: 0; color: #fff;
+      font-family: 'Share Tech Mono', monospace; font-size: 13px; font-weight: 700;
+      max-width: 380px; word-break: break-word;
+    }
+    .toast-sucesso { background: #10b981; }
     .toast-erro { background: #dc2626; }
-    #loading-overlay { display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(10, 14, 26, 0.8); align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #loading-overlay {
+      display: none; position: fixed; inset: 0; z-index: 99999;
+      background: rgba(10,14,46,0.9); align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+    }
     #loading-overlay.ativo { display: flex; }
-    .spinner { width: 40px; height: 40px; border: 4px solid rgba(148, 163, 184, 0.15); border-top-color: #06b6d4; border-radius: 50%; animation: spin .8s linear infinite; }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 4px solid rgba(0,229,255,0.15);
+      border-top-color: #00e5ff; border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
     body.loading #loading-overlay { display: flex; }
     @media (max-width: 850px) {
@@ -95,6 +121,7 @@
       <button onclick="mostrarTela('entregadores')"><i class="ph ph-motorcycle"></i> Entregadores</button>
       <button onclick="mostrarTela('produtos')"><i class="ph ph-package"></i> Produtos</button>
       <button onclick="mostrarTela('pedidos')"><i class="ph ph-receipt"></i> Pedidos</button>
+      <button onclick="mostrarTela('gps')"><i class="ph ph-map-trifold"></i> GPS</button>
       <button onclick="mostrarTela('suporte')"><i class="ph ph-headset"></i> Suporte</button>
       <button onclick="mostrarTela('cupons')"><i class="ph ph-ticket"></i> Cupons</button>
       <button onclick="mostrarTela('configuracoes')"><i class="ph ph-gear"></i> Configurações</button>
@@ -202,7 +229,7 @@
         <div class="bulk-toolbar">
           <label><input id="bulkAll-clientes" type="checkbox" onchange="alternarSelecaoVisivelMassa('clientes', window.idsClientesVisiveis || [], this.checked)"> Selecionar visíveis</label>
           <span id="bulkCount-clientes">Selecione 2 ou mais</span>
-          <button id="bulkDelete-clientes" class="bulk-delete" type="button" onclick="mostrarConfirm('Excluir clientes','Tem certeza que deseja excluir os clientes selecionados?',excluirClientesSelecionados)" disabled>Excluir selecionados</button>
+          <button id="bulkDelete-clientes" class="bulk-delete" type="button" onclick="excluirClientesSelecionados()" disabled>Excluir selecionados</button>
         </div>
       </div>
       <table><thead><tr><th class="bulk-col"></th><th>ID</th><th>Nome</th><th>Telefone</th><th>Rua</th><th>Número</th><th>Bairro</th><th>Referência</th><th>Ação</th></tr></thead><tbody id="listaClientes"></tbody></table>
@@ -228,7 +255,7 @@
         <div class="bulk-toolbar">
           <label><input id="bulkAll-entregadores" type="checkbox" onchange="alternarSelecaoVisivelMassa('entregadores', window.idsEntregadoresVisiveis || [], this.checked)"> Selecionar visíveis</label>
           <span id="bulkCount-entregadores">Selecione 2 ou mais</span>
-          <button id="bulkDelete-entregadores" class="bulk-delete" type="button" onclick="mostrarConfirm('Excluir entregadores','Tem certeza que deseja excluir os entregadores selecionados?',excluirEntregadoresSelecionados)" disabled>Excluir selecionados</button>
+          <button id="bulkDelete-entregadores" class="bulk-delete" type="button" onclick="excluirEntregadoresSelecionados()" disabled>Excluir selecionados</button>
         </div>
       </div>
       <table><thead><tr><th class="bulk-col"></th><th>ID</th><th>Nome</th><th>Telefone</th><th>Veículo</th><th>Código</th><th>Status</th><th>Ação</th></tr></thead><tbody id="listaEntregadores"></tbody></table>
@@ -259,7 +286,7 @@
         <div class="bulk-toolbar">
           <label><input id="bulkAll-produtos" type="checkbox" onchange="alternarSelecaoVisivelMassa('produtos', window.idsProdutosVisiveis || [], this.checked)"> Selecionar visíveis</label>
           <span id="bulkCount-produtos">Selecione 2 ou mais</span>
-          <button id="bulkDelete-produtos" class="bulk-delete" type="button" onclick="mostrarConfirm('Excluir produtos','Tem certeza que deseja excluir os produtos selecionados?',excluirProdutosSelecionados)" disabled>Excluir selecionados</button>
+          <button id="bulkDelete-produtos" class="bulk-delete" type="button" onclick="excluirProdutosSelecionados()" disabled>Excluir selecionados</button>
         </div>
       </div>
       <table><thead><tr><th class="bulk-col"></th><th>ID</th><th>Produto</th><th>Preço</th><th>Estoque</th><th>Mínimo</th><th>Status</th><th>Ação</th></tr></thead><tbody id="listaProdutos"></tbody></table>
@@ -285,13 +312,41 @@
         <div class="bulk-toolbar">
           <label><input id="bulkAll-pedidos" type="checkbox" onchange="alternarSelecaoVisivelMassa('pedidos', window.idsPedidosVisiveis || [], this.checked)"> Selecionar visíveis</label>
           <span id="bulkCount-pedidos">Selecione 2 ou mais</span>
-          <button id="bulkDelete-pedidos" class="bulk-delete" type="button" onclick="mostrarConfirm('Excluir pedidos','Tem certeza que deseja excluir os pedidos selecionados?',excluirPedidosSelecionados)" disabled>Excluir selecionados</button>
+          <button id="bulkDelete-pedidos" class="bulk-delete" type="button" onclick="excluirPedidosSelecionados()" disabled>Excluir selecionados</button>
           <button class="secondary-action" type="button" onclick="mostrarConfirm('Expirar Pix antigos','Todos os pedidos com Pix pendente ser\u00e3o marcados como expirados. Continuar?',expirarPixPendentes)">Expirar Pix antigos</button>
           <button class="secondary-action danger-soft" type="button" onclick="mostrarConfirm('Limpar finalizados','Pedidos finalizados h\u00e1 mais de 30 dias ser\u00e3o removidos permanentemente. Continuar?',limparPedidosAntigos)">Limpar finalizados 30d</button>
         </div>
       </div>
       <div id="statusBadges" class="status-filters"></div>
       <div id="listaPedidos" class="orders-list"></div>
+    </section>
+
+    <section id="gps" class="tela">
+      <div class="section-head">
+        <div>
+          <h2><i class="ph ph-map-trifold"></i> GPS / Rastreamento</h2>
+          <p>Acompanhe a localização dos entregadores e entregas em tempo real.</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="secondary-action" onclick="limparEntregasAntigasGps()"><i class="ph ph-trash"></i> Limpar antigos</button>
+          <button class="secondary-action" onclick="carregarGpsAdmin()"><i class="ph ph-arrow-clockwise"></i> Atualizar</button>
+        </div>
+      </div>
+      <div class="gps-admin-layout">
+        <div id="adminTrackingMap" class="gps-admin-map">
+          <div class="tracking-map-empty">Carregando mapa...</div>
+        </div>
+        <aside class="gps-admin-sidebar">
+          <div class="gps-admin-stats">
+            <div class="gps-admin-stat"><span>Entregadores ativos</span><strong id="gpsEntregadoresAtivos">0</strong></div>
+            <div class="gps-admin-stat"><span>Em rota</span><strong id="gpsEmRota">0</strong></div>
+          </div>
+          <h3>Entregas ativas</h3>
+          <div id="gpsListaEntregas" class="gps-admin-list">
+            <div class="tracking-map-empty">Nenhuma entrega ativa no momento.</div>
+          </div>
+        </aside>
+      </div>
     </section>
 
     <section id="suporte" class="tela">
@@ -376,10 +431,10 @@
         <button onclick="fecharConfirm()">&times;</button>
       </div>
       <div style="padding:20px">
-        <p id="confirmMsg" style="margin:0;color:var(--muted);font-size:14px;line-height:1.5"></p>
+        <p id="confirmMsg" style="margin:0;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:13px;line-height:1.6"></p>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-          <button onclick="fecharConfirm()" style="padding:10px 18px;border:1px solid var(--borda);border-radius:8px;background:var(--branco);color:var(--texto);font-weight:600;cursor:pointer">Cancelar</button>
-          <button id="confirmBtn" onclick="executarConfirm()" style="padding:10px 18px;border:none;border-radius:8px;background:#dc2626;color:#fff;font-weight:700;cursor:pointer">Confirmar</button>
+          <button onclick="fecharConfirm()" style="padding:10px 18px;border:1px solid rgba(136,146,176,0.2);border-radius:0;background:transparent;color:var(--mid);font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px">Cancelar</button>
+          <button id="confirmBtn" onclick="executarConfirm()" style="padding:10px 18px;border:none;border-radius:0;background:#dc2626;color:#fff;font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px">Confirmar</button>
         </div>
       </div>
     </div>
@@ -392,11 +447,11 @@
         <button onclick="fecharPrompt()">&times;</button>
       </div>
       <div style="padding:20px">
-        <p id="promptMsg" style="margin:0 0 12px;color:var(--muted);font-size:14px;line-height:1.5"></p>
-        <input id="promptInput" type="text" style="width:100%;padding:10px 14px;border:1px solid var(--borda);border-radius:8px;background:var(--card);color:var(--texto);font-size:14px;box-sizing:border-box;outline:none" onkeydown="if(event.key==='Enter')executarPrompt()">
+        <p id="promptMsg" style="margin:0 0 12px;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:13px;line-height:1.6"></p>
+        <input id="promptInput" type="text" style="width:100%;padding:10px 14px;border:1px solid rgba(0,229,255,0.15);border-radius:0;background:var(--stripe);color:var(--texto);font-family:'Share Tech Mono',monospace;font-size:13px;box-sizing:border-box;outline:none" onkeydown="if(event.key==='Enter')executarPrompt()">
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-          <button onclick="fecharPrompt()" style="padding:10px 18px;border:1px solid var(--borda);border-radius:8px;background:var(--branco);color:var(--texto);font-weight:600;cursor:pointer">Cancelar</button>
-          <button onclick="executarPrompt()" style="padding:10px 18px;border:none;border-radius:8px;background:#06b6d4;color:#fff;font-weight:700;cursor:pointer">OK</button>
+          <button onclick="fecharPrompt()" style="padding:10px 18px;border:1px solid rgba(136,146,176,0.2);border-radius:0;background:transparent;color:var(--mid);font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px">Cancelar</button>
+          <button onclick="executarPrompt()" style="padding:10px 18px;border:none;border-radius:0;background:#00e5ff;color:#0a0e2e;font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:2px">OK</button>
         </div>
       </div>
     </div>
@@ -409,26 +464,26 @@
         <button type="button" onclick="fecharImageModal()" aria-label="Fechar">&times;</button>
       </div>
       <div style="padding:20px">
-        <div id="imageUploadArea" style="border:2px dashed rgba(148,163,184,0.2);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:.2s" onclick="document.getElementById('imageFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='#06b6d4'" ondragleave="this.style.borderColor='rgba(148,163,184,0.2)'" ondrop="event.preventDefault();this.style.borderColor='rgba(148,163,184,0.2)';handleImageDrop(event)">
-          <i class="ph ph-image" style="font-size:40px;color:#06b6d4;display:block;margin-bottom:8px"></i>
-          <p style="margin:0;color:var(--muted);font-size:14px">Clique ou arraste uma imagem aqui</p>
-          <p style="margin:4px 0 0;color:var(--muted);font-size:12px">JPG, PNG ou WebP - Máximo 5MB</p>
+        <div id="imageUploadArea" style="border:2px dashed rgba(0,229,255,0.2);padding:32px;text-align:center;cursor:pointer;transition:.2s" onclick="document.getElementById('imageFileInput').click()" ondragover="event.preventDefault();this.style.borderColor='#00e5ff'" ondragleave="this.style.borderColor='rgba(0,229,255,0.2)'" ondrop="event.preventDefault();this.style.borderColor='rgba(0,229,255,0.2)';handleImageDrop(event)">
+          <i class="ph ph-image" style="font-size:40px;color:#00e5ff;display:block;margin-bottom:8px"></i>
+          <p style="margin:0;color:var(--muted);font-family:'Share Tech Mono',monospace;font-size:13px">Clique ou arraste uma imagem aqui</p>
+          <p style="margin:4px 0 0;color:var(--mid);font-family:'Share Tech Mono',monospace;font-size:11px">JPG, PNG ou WebP - Maximo 5MB</p>
         </div>
         <input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="handleImageSelect(event)">
         <div id="imageCropperArea" style="display:none;margin-top:16px">
-          <div style="max-height:350px;overflow:hidden;border-radius:8px;background:#0a0e1a">
+          <div style="max-height:350px;overflow:hidden;background:#0a0e2e">
             <img id="imageCropperImg" style="max-width:100%;display:block">
           </div>
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-            <button onclick="cancelarCrop()" style="padding:8px 16px;border:1px solid var(--borda);border-radius:8px;background:var(--branco);color:var(--texto);font-weight:600;cursor:pointer;font-size:13px">Cancelar</button>
-            <button onclick="aplicarCrop()" id="btnAplicarCrop" style="padding:8px 16px;border:none;border-radius:8px;background:#06b6d4;color:#fff;font-weight:700;cursor:pointer;font-size:13px">Salvar imagem</button>
+            <button onclick="cancelarCrop()" style="padding:8px 16px;border:1px solid rgba(0,229,255,0.2);border-radius:0;background:transparent;color:var(--mid);font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px">Cancelar</button>
+            <button onclick="aplicarCrop()" id="btnAplicarCrop" style="padding:8px 16px;border:none;border-radius:0;background:#00e5ff;color:#0a0e2e;font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px">Salvar imagem</button>
           </div>
         </div>
         <div id="imagePreviewArea" style="display:none;margin-top:16px;text-align:center">
-          <img id="imagePreviewImg" style="max-width:200px;max-height:200px;border-radius:8px;border:1px solid var(--borda)">
+          <img id="imagePreviewImg" style="max-width:200px;max-height:200px;border:1px solid rgba(0,229,255,0.15)">
           <div style="display:flex;gap:8px;justify-content:center;margin-top:12px">
-            <button onclick="editarImagemAtual()" style="padding:8px 16px;border:1px solid #06b6d4;border-radius:8px;background:transparent;color:#06b6d4;font-weight:600;cursor:pointer;font-size:13px">Editar recorte</button>
-            <button onclick="removerImagemProduto()" style="padding:8px 16px;border:1px solid #dc2626;border-radius:8px;background:transparent;color:#dc2626;font-weight:600;cursor:pointer;font-size:13px">Remover imagem</button>
+            <button onclick="editarImagemAtual()" style="padding:8px 16px;border:1px solid #00e5ff;border-radius:0;background:transparent;color:#00e5ff;font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px">Editar recorte</button>
+            <button onclick="removerImagemProduto()" style="padding:8px 16px;border:1px solid #dc2626;border-radius:0;background:transparent;color:#dc2626;font-family:'Share Tech Mono',monospace;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:1px">Remover imagem</button>
           </div>
         </div>
       </div>
@@ -445,6 +500,7 @@
   <script src="js/suporte.js"></script>
   <script src="js/cupons.js"></script>
   <script src="js/configuracoes.js"></script>
+  <script src="js/gps.js"></script>
   <script src="js/relatorio.js"></script>
   <script src="js/app.js"></script>
 </body>

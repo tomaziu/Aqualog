@@ -10,3 +10,4 @@ bcrypt
 loguru
 qrcode[pil]
 ruff
+python-multipart

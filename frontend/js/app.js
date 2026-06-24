@@ -1,4 +1,5 @@
 var _confirmCb = null;
+var _confirmResolve = null;
 var _promptCb = null;
 
 function mostrarConfirm(titulo, mensagem, cb) {
@@ -7,17 +8,20 @@ function mostrarConfirm(titulo, mensagem, cb) {
   _confirmCb = cb;
   $('confirmModal').style.zIndex = '10003';
   $('confirmModal').classList.add('ativo');
+  return new Promise(function(resolve) { _confirmResolve = resolve; });
 }
 
 function fecharConfirm() {
   $('confirmModal').classList.remove('ativo');
   $('confirmModal').style.zIndex = '';
   _confirmCb = null;
+  if (_confirmResolve) { _confirmResolve(); _confirmResolve = null; }
 }
 
-function executarConfirm() {
-  if (_confirmCb) _confirmCb();
+async function executarConfirm() {
+  var cb = _confirmCb;
   fecharConfirm();
+  if (cb) await cb();
 }
 
 function mostrarPrompt(titulo, mensagem, valorPadrao, cb) {
@@ -70,6 +74,9 @@ async function carregarTudo() {
   }
   if (typeof carregarSuporte === 'function') {
     await carregarSuporte();
+  }
+  if (typeof carregarGpsAdmin === 'function' && $('gps') && $('gps').classList.contains('ativa')) {
+    iniciarGpsAdmin();
   }
 }
 

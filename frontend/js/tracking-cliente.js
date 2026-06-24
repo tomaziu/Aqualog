@@ -2,7 +2,9 @@ var clienteEntregaAtual = null;
 var clienteWs = null;
 var clienteMap = null;
 var clienteMarkers = {};
-var clienteRoute = null;
+var clienteGpsWatchId = null;
+var clienteGpsIntervalo = null;
+var clienteGpsCompartilhando = false;
 
 function clienteStatusTexto(status) {
   var labels = {
@@ -36,8 +38,10 @@ async function buscarEntregaCliente(id, telefone) {
     return;
   }
   clienteEntregaAtual = json.data;
+  clienteEntregaAtual._telefone = telefone;
   renderClienteEntrega(clienteEntregaAtual);
   conectarClienteWs(id, telefone);
+  iniciarClienteGps(id, telefone);
 }
 
 function renderClienteEntrega(e) {
@@ -52,10 +56,7 @@ function renderClienteEntrega(e) {
 }
 
 function carregarLeafletCliente(callback) {
-  if (window.L) {
-    callback();
-    return;
-  }
+  if (window.L) { callback(); return; }
   if (!document.getElementById('leaflet-css')) {
     var css = document.createElement('link');
     css.id = 'leaflet-css';
@@ -75,21 +76,35 @@ function carregarLeafletCliente(callback) {
   }
 }
 
-function clienteIcone(nome) {
+function clienteIconeEntregador() {
   return L.divIcon({
     className: 'tracking-marker-wrap',
-    html: '<div class="tracking-marker tracking-marker-' + nome + '"></div>',
-    iconSize: [26, 26],
-    iconAnchor: [13, 13]
+    html: '<div class="gps-icon-entregador"><i class="ph ph-motorcycle"></i></div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
+  });
+}
+
+function clienteIconeCliente() {
+  return L.divIcon({
+    className: 'tracking-marker-wrap',
+    html: '<div class="gps-icon-cliente"><i class="ph ph-user"></i></div>',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
   });
 }
 
 function atualizarMarcadorCliente(nome, latLng, label) {
+  var icon;
+  if (nome === 'entregador') icon = clienteIconeEntregador();
+  else icon = clienteIconeCliente();
+
   if (!clienteMarkers[nome]) {
-    clienteMarkers[nome] = L.marker(latLng, { icon: clienteIcone(nome), title: label }).addTo(clienteMap);
+    clienteMarkers[nome] = L.marker(latLng, { icon: icon, title: label }).addTo(clienteMap);
     clienteMarkers[nome].bindTooltip(label);
   } else {
     clienteMarkers[nome].setLatLng(latLng);
+    clienteMarkers[nome].setIcon(icon);
   }
 }
 
@@ -98,29 +113,65 @@ function desenharMapaCliente(e) {
     var el = $('clienteTrackingMap');
     if (!clienteMap) {
       el.innerHTML = '';
-      clienteMap = L.map('clienteTrackingMap').setView([Number(e.destino_latitude), Number(e.destino_longitude)], 13);
+      clienteMap = L.map('clienteTrackingMap').setView([-3.5, -43.5], 13);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '&copy; OpenStreetMap'
       }).addTo(clienteMap);
+      setTimeout(function() { clienteMap.invalidateSize(); }, 200);
     }
-    atualizarMarcadorCliente('origem', [Number(e.origem_latitude), Number(e.origem_longitude)], 'Origem');
-    atualizarMarcadorCliente('destino', [Number(e.destino_latitude), Number(e.destino_longitude)], 'Destino');
-    if (e.entregador_latitude) {
-      atualizarMarcadorCliente('entregador', [Number(e.entregador_latitude), Number(e.entregador_longitude)], 'Entregador');
+
+    var pontos = [];
+
+    if (e.entregador_latitude && e.entregador_longitude) {
+      var latE = Number(e.entregador_latitude);
+      var lngE = Number(e.entregador_longitude);
+      atualizarMarcadorCliente('entregador', [latE, lngE], 'Entregador');
+      pontos.push([latE, lngE]);
     }
-    var coords = [
-      [Number(e.origem_latitude), Number(e.origem_longitude)],
-      e.entregador_latitude ? [Number(e.entregador_latitude), Number(e.entregador_longitude)] : null,
-      [Number(e.destino_latitude), Number(e.destino_longitude)]
-    ].filter(Boolean);
-    if (!clienteRoute) {
-      clienteRoute = L.polyline(coords, { color: '#2563eb', weight: 5, opacity: .82 }).addTo(clienteMap);
-    } else {
-      clienteRoute.setLatLngs(coords);
+
+    if (e.cliente_atual_latitude && e.cliente_atual_longitude) {
+      var latC = Number(e.cliente_atual_latitude);
+      var lngC = Number(e.cliente_atual_longitude);
+      atualizarMarcadorCliente('cliente', [latC, lngC], 'Você');
+      pontos.push([latC, lngC]);
     }
-    clienteMap.fitBounds(L.latLngBounds(coords), { padding: [44, 44], maxZoom: 15 });
+
+    if (pontos.length) {
+      clienteMap.fitBounds(L.latLngBounds(pontos), { padding: [50, 50], maxZoom: 15 });
+    }
   });
+}
+
+function iniciarClienteGps(deliveryId, telefone) {
+  if (!navigator.geolocation || clienteGpsCompartilhando) return;
+  clienteGpsCompartilhando = true;
+  if (clienteGpsWatchId !== null) navigator.geolocation.clearWatch(clienteGpsWatchId);
+  clienteGpsWatchId = navigator.geolocation.watchPosition(function(pos) {
+    enviarLocalizacaoCliente(deliveryId, telefone, pos.coords);
+  }, function() {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 12000 });
+  if (clienteGpsIntervalo) clearInterval(clienteGpsIntervalo);
+  clienteGpsIntervalo = setInterval(function() {
+    if (clienteEntregaAtual) {
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        enviarLocalizacaoCliente(deliveryId, telefone, pos.coords);
+      }, function() {}, { enableHighAccuracy: true, timeout: 8000 });
+    }
+  }, 6000);
+}
+
+async function enviarLocalizacaoCliente(deliveryId, telefone, coords) {
+  try {
+    await fetch(window.location.origin + '/api/v1/site/deliveries/' + encodeURIComponent(deliveryId) + '/client-location?telefone=' + encodeURIComponent(telefone), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        accuracy: coords.accuracy
+      })
+    });
+  } catch (e) {}
 }
 
 function conectarClienteWs(id, telefone) {

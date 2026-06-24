@@ -95,7 +95,7 @@ async function salvarCupom(id) {
 }
 
 async function excluirCupom(id) {
-  mostrarConfirm('Excluir cupom', 'Excluir este cupom?', async function() {
+  await mostrarConfirm('Excluir cupom', 'Excluir este cupom?', async function() {
     if (await apiDelete('/cupons/' + id)) {
       ultimoCupons = null;
       await carregarCupons();
