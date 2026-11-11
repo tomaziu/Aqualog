@@ -1,5 +1,5 @@
 # AquaLog - Setup Automatico (PowerShell)
-# Instala dependencias, configura banco MySQL e prepara o ambiente para rodar o projeto.
+# Instala dependencias, configura banco MySQL, cria tabelas automaticamente e prepara o projeto.
 # Execute com: .\setup.ps1  (ou PowerShell -ExecutionPolicy Bypass -File setup.ps1)
 
 $ErrorActionPreference = "Continue"
@@ -19,17 +19,17 @@ function Write-Log {
     Add-Content -LiteralPath $LOG_FILE -Value $line
 }
 
-function Test-Python {
+function Test-PythonCmd {
     $cmd = Get-Command python -ErrorAction SilentlyContinue
     if (-not $cmd) { $cmd = Get-Command py -ErrorAction SilentlyContinue }
     return $cmd
 }
 
-function Test-MySQL {
+function Test-MySqlCmd {
     return Get-Command mysql -ErrorAction SilentlyContinue
 }
 
-function Invoke-MySQL {
+function Invoke-MySql {
     param([string]$User, [securestring]$Password, [string]$SqlFile, [string]$Database = $null)
     $passText = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
     $args = "-u $User", "-p$passText"
@@ -44,6 +44,24 @@ function Invoke-MySQL {
     return $code
 }
 
+function Read-SecureHost {
+    param([string]$Prompt, [string]$Default)
+    if ($isInteractive) {
+        $val = Read-Host $Prompt
+        if ([string]::IsNullOrWhiteSpace($val)) { return $Default }
+        return $val
+    }
+    return $Default
+}
+
+function Read-SecurePass {
+    param([string]$Prompt)
+    if ($isInteractive) {
+        return Read-Host $Prompt -AsSecureString
+    }
+    return $null
+}
+
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  AquaLog - Instalador Automatico" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
@@ -53,25 +71,15 @@ Write-Host ""
 Set-Location -LiteralPath $PROJECT_ROOT
 
 # --------------------------------------------------
-# 0) Modo interativo ou nao?
+# 0) Modo interativo?
 # --------------------------------------------------
-$isInteractive = $true
-try {
-    $null = [System.Console]::IsInputRedirected
-} catch {
-    $isInteractive = $false
-}
-if (-not [Environment::UserInteractive]) { $isInteractive = $false }
-
-if (-not $isInteractive) {
-    Write-Host "  Modo nao interativo detectado (CI/automacao). Usando valores padrao." -ForegroundColor Yellow
-}
+$isInteractive = [Environment::UserInteractive]
 
 # --------------------------------------------------
 # 1) Verificar Python
 # --------------------------------------------------
-Write-Host "[1/8] Verificando Python..." -ForegroundColor Yellow
-$pythonCmd = Test-Python
+Write-Host "[1/9] Verificando Python..." -ForegroundColor Yellow
+$pythonCmd = Test-PythonCmd
 if (-not $pythonCmd) {
     Write-Host "  X Python nao encontrado!" -ForegroundColor Red
     Write-Host "    Instale Python 3.11+ em: https://www.python.org/downloads/" -ForegroundColor Red
@@ -85,7 +93,7 @@ Write-Host ""
 # --------------------------------------------------
 # 2) Criar ambiente virtual
 # --------------------------------------------------
-Write-Host "[2/8] Preparando ambiente virtual..." -ForegroundColor Yellow
+Write-Host "[2/9] Preparando ambiente virtual..." -ForegroundColor Yellow
 if (-not (Test-Path -LiteralPath $VENV_DIR)) {
     & $pythonCmd.Source -m venv $VENV_DIR
     if ($LASTEXITCODE -ne 0) {
@@ -101,7 +109,7 @@ Write-Host ""
 # --------------------------------------------------
 # 3) Instalar dependencias
 # --------------------------------------------------
-Write-Host "[3/8] Instalando dependencias Python (pode demorar)..." -ForegroundColor Yellow
+Write-Host "[3/9] Instalando dependencias Python (pode demorar)..." -ForegroundColor Yellow
 $activateScript = Join-Path $VENV_DIR "Scripts\Activate.ps1"
 & $activateScript | Out-Null
 
@@ -112,7 +120,7 @@ Write-Host "    Instalando requirements.txt..." -ForegroundColor DarkGray
 $pipResult = & $pythonCmd.Source -m pip install -r (Join-Path $BACKEND_DIR "requirements.txt") 2>$null
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  X Falha ao instalar dependencias." -ForegroundColor Red
-    Write-Host "    Tente rodar manualmente:" -ForegroundColor Yellow
+    Write-Host "    Rode manualmente:" -ForegroundColor Yellow
     Write-Host "      cd backend && venv\Scripts\activate && pip install -r requirements.txt" -ForegroundColor Yellow
     exit 1
 }
@@ -120,16 +128,16 @@ Write-Host "  OK  Dependencias instaladas." -ForegroundColor Green
 Write-Host ""
 
 # --------------------------------------------------
-# 4) Verificar / Configurar MySQL
+# 4) Verificar MySQL
 # --------------------------------------------------
-Write-Host "[4/8] Verificando MySQL..." -ForegroundColor Yellow
-$mysqlCmd = Test-MySQL
+Write-Host "[4/9] Verificando MySQL..." -ForegroundColor Yellow
+$mysqlCmd = Test-MySqlCmd
 $mysqlAvailable = $false
 if (-not $mysqlCmd) {
     Write-Host "  !  MySQL nao encontrado no PATH." -ForegroundColor Yellow
     Write-Host "     Baixe e instale: https://dev.mysql.com/downloads/mysql/" -ForegroundColor Yellow
-    Write-Host "     Durante a instalacao, anote a senha do root." -ForegroundColor Yellow
-    Write-Host "     Depois de instalar, rode este script novamente." -ForegroundColor Yellow
+    Write-Host "     Anote a senha do root durante a instalacao." -ForegroundColor Yellow
+    Write-Host "     Depois rode este script novamente." -ForegroundColor Yellow
 } else {
     $mysqlAvailable = $true
     Write-Host "  OK  MySQL encontrado ($($mysqlCmd.Source))" -ForegroundColor Green
@@ -139,7 +147,7 @@ Write-Host ""
 # --------------------------------------------------
 # 5) Arquivo .env
 # --------------------------------------------------
-Write-Host "[5/8] Configurando arquivo .env..." -ForegroundColor Yellow
+Write-Host "[5/9] Configurando arquivo .env..." -ForegroundColor Yellow
 
 $defaultEnv = @"
 # MySQL
@@ -170,14 +178,13 @@ if (-not (Test-Path -LiteralPath $ENV_FILE)) {
         Write-Host "  OK  backend\.env criado com valores padrao." -ForegroundColor Green
     }
     Write-Host ""
-    Write-Host "  ** IMPORTANTE: edite backend\.env e preencha pelo menos: **" -ForegroundColor Yellow
+    Write-Host "  ** IMPORTANTE: edite backend\.env e preencha: **" -ForegroundColor Yellow
     Write-Host "     - DB_PASSWORD  (senha do root do MySQL)" -ForegroundColor Yellow
     Write-Host "     - ADMIN_PASSWORD" -ForegroundColor Yellow
     Write-Host "     - JWT_SECRET" -ForegroundColor Yellow
     Write-Host "     - PIX_CHAVE" -ForegroundColor Yellow
 } else {
     Write-Host "  OK  backend\.env ja existe (mantido)." -ForegroundColor Green
-    # Garante que DB_NAME esteja definido
     $envContent = Get-Content -LiteralPath $ENV_FILE -Raw
     if ($envContent -notmatch 'DB_NAME=') {
         Add-Content -LiteralPath $ENV_FILE -Value "`nDB_NAME=aqualog"
@@ -186,56 +193,51 @@ if (-not (Test-Path -LiteralPath $ENV_FILE)) {
 Write-Host ""
 
 # --------------------------------------------------
-# 6) Criar banco e aplicar schema
+# 6) Criar banco e tabelas via schema.sql
 # --------------------------------------------------
-Write-Host "[6/8] Banco de dados e tabelas..." -ForegroundColor Yellow
+Write-Host "[6/9] Criando banco de dados e tabelas..." -ForegroundColor Yellow
 
 if (-not $mysqlAvailable) {
-    Write-Host "  !  Pulando criacao do banco (MySQL nao disponível)." -ForegroundColor Yellow
-    Write-Host "     Instale o MySQL, rode o schema manualmente:" -ForegroundColor Yellow
+    Write-Host "  !  Pulando (MySQL nao disponível)." -ForegroundColor Yellow
+    Write-Host "     Instale MySQL e rode manualmente:" -ForegroundColor Yellow
     Write-Host "       mysql -u root -p < backend\schema.sql" -ForegroundColor Yellow
 } else {
-    $dbCreated = $false
+    $shouldApply = $false
     if ($isInteractive) {
-        $choice = "2"
-        try { $choice = Read-Host "  Deseja criar o banco 'aqualog' e tabelas agora? [1] Nao / [2] Sim" } catch {}
-        if ($choice -eq "2") {
-            $dbCreated = $true
-        }
+        try { $choice = Read-Host "  Aplicar backend\schema.sql agora? (cria banco + tabelas) [1] Nao / [2] Sim" } catch { $choice = "2" }
+        if ($choice -eq "2") { $shouldApply = $true }
     } else {
-        $dbCreated = $true
+        $shouldApply = $true
     }
 
-    if ($dbCreated) {
-        Write-Host ""
-        Write-Host "  Criando banco e aplicando schema.sql..." -ForegroundColor Yellow
-        $mysqlUser = "root"
-        if ($isInteractive) {
-            $u = Read-Host "  Usuario MySQL [root]"
-            if (-not [string]::IsNullOrWhiteSpace($u)) { $mysqlUser = $u }
-        }
-        $mysqlPass = Read-Host "  Senha MySQL para '$mysqlUser'" -AsSecureString
+    if ($shouldApply) {
+        $mysqlUser = Read-SecureHost -Prompt "  Usuario MySQL [root]" -Default "root"
+        $mysqlPass = Read-SecurePass -Prompt "  Senha MySQL para '$mysqlUser'"
 
-        $code = Invoke-MySQL -User $mysqlUser -Password $mysqlPass -SqlFile $SCHEMA_SQL
-        if ($code -ne 0) {
-            Write-Host "  !  Falha ao aplicar schema.sql (codigo $code)." -ForegroundColor Yellow
-            Write-Host "     Verifique se o MySQL esta rodando e a senha esta correta." -ForegroundColor Yellow
-            Write-Host "     Aplique manualmente depois: mysql -u $mysqlUser -p < backend\schema.sql" -ForegroundColor Yellow
+        if (-not $mysqlPass) {
+            Write-Host "  !  Senha vazia, pulando aplicacao do schema." -ForegroundColor Yellow
         } else {
-            Write-Host "  OK  Banco 'aqualog' e tabelas criados." -ForegroundColor Green
+            Write-Host "  Aplicando backend\schema.sql..." -ForegroundColor Yellow
+            $code = Invoke-MySql -User $mysqlUser -Password $mysqlPass -SqlFile $SCHEMA_SQL
+            if ($code -ne 0) {
+                Write-Host "  !  Falha ao aplicar schema.sql (codigo $code)." -ForegroundColor Yellow
+                Write-Host "     Verifique se o MySQL esta rodando e a senha esta correta." -ForegroundColor Yellow
+                Write-Host "     Rode manualmente: mysql -u $mysqlUser -p < backend\schema.sql" -ForegroundColor Yellow
+            } else {
+                Write-Host "  OK  Banco 'aqualog' e tabelas criados com sucesso." -ForegroundColor Green
+            }
         }
     } else {
-        Write-Host "  OK  Pulando criacao do banco." -ForegroundColor Green
+        Write-Host "  OK  Pulando aplicacao do schema." -ForegroundColor Green
     }
 }
 Write-Host ""
 
 # --------------------------------------------------
-# 7) Testar conectividade com o banco
+# 7) Testar conectividade com banco
 # --------------------------------------------------
-Write-Host "[7/8] Testando conectividade com MySQL..." -ForegroundColor Yellow
+Write-Host "[7/9] Testando conectividade com MySQL..." -ForegroundColor Yellow
 if ($mysqlAvailable) {
-    # Lê a senha do .env se existir
     $envText = ""
     if (Test-Path -LiteralPath $ENV_FILE) {
         $envText = Get-Content -LiteralPath $ENV_FILE -Raw
@@ -247,7 +249,7 @@ if ($mysqlAvailable) {
 
     if (-not [string]::IsNullOrWhiteSpace($envPass)) {
         $secPass = $envPass | ConvertTo-SecureString -AsPlainText -Force
-        $code = Invoke-MySQL -User $envUser -Password $secPass -SqlFile $null -Database "aqualog"
+        $code = Invoke-MySql -User $envUser -Password $secPass -SqlFile $null -Database "aqualog"
         if ($code -eq 0) {
             Write-Host "  OK  Conectou ao banco 'aqualog' com sucesso." -ForegroundColor Green
         } else {
@@ -255,7 +257,7 @@ if ($mysqlAvailable) {
             Write-Host "     Verifique DB_USER e DB_PASSWORD no backend\.env" -ForegroundColor Yellow
         }
     } else {
-        Write-Host "  !  Senha do MySQL nao preenchida no .env. Pulando teste de conectividade." -ForegroundColor Yellow
+        Write-Host "  !  Senha do MySQL nao preenchida no .env. Pulando teste." -ForegroundColor Yellow
     }
 } else {
     Write-Host "  !  MySQL nao disponível. Pulando teste." -ForegroundColor Yellow
@@ -263,7 +265,7 @@ if ($mysqlAvailable) {
 Write-Host ""
 
 # --------------------------------------------------
-# 8) Final
+# 8) Resumo
 # --------------------------------------------------
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  Instalacao concluida!" -ForegroundColor Cyan
@@ -271,15 +273,15 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "  Proximos passos:" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  1. Edite o arquivo backend\.env (confirme DB_PASSWORD, JWT_SECRET, ADMIN_PASSWORD)"
+Write-Host "  1. Edite backend\.env (confirme DB_PASSWORD, JWT_SECRET, ADMIN_PASSWORD)"
 Write-Host "  2. Rode o servidor:"
 Write-Host "       cd backend"
 Write-Host "       venv\Scripts\activate"
 Write-Host "       uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
 Write-Host ""
-Write-Host "  Ou use o atalho: iniciar_tudo.bat"
+Write-Host "  Ou use: iniciar_tudo.bat"
 Write-Host ""
-Write-Host "  Telas apos iniciar:" -ForegroundColor Yellow
+Write-Host "  Telas:" -ForegroundColor Yellow
 Write-Host "    Admin:      http://127.0.0.1:8000"
 Write-Host "    Cliente:    http://127.0.0.1:8000/cliente.html"
 Write-Host "    Entregador: http://127.0.0.1:8000/entregador.html"
@@ -287,9 +289,7 @@ Write-Host ""
 Write-Host "  Testes:"
 Write-Host "    cd backend && pytest tests/ -v"
 Write-Host ""
-Write-Host "  Log completo salvo em: $LOG_FILE" -ForegroundColor Gray
+Write-Host "  Log completo: $LOG_FILE" -ForegroundColor Gray
 Write-Host ""
 
-try {
-    pause
-} catch {}
+try { pause } catch {}
