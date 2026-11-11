@@ -72,8 +72,6 @@ aqualog_projeto/
 │   ├── docs/
 │   │   └── rastreamento_entregas.md
 │   └── logs/
-├── docker-compose.yml
-├── Dockerfile
 ├── Makefile
 └── iniciar_tudo.bat
 ```

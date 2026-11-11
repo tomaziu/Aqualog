@@ -35,9 +35,6 @@ desktop.ini
 *.backup
 *.sql.bak
 
-# Docker volumes
-docker-data/
-
 # Build artifacts
 dist/
 build/
