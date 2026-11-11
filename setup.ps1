@@ -112,10 +112,13 @@ Write-Host ""
 # --------------------------------------------------
 Write-Host "[6/7] Schema do banco de dados." -ForegroundColor Yellow
 Write-Host ""
+Write-Host "  O schema.sql ja CRIA o banco 'aqualog' (se nao existir) e as tabelas." -ForegroundColor Gray
+Write-Host "  Voso nao precisa criar o banco manualmente." -ForegroundColor Gray
+Write-Host ""
 
 $schemaOpt = "1"
 try {
-    $schemaOpt = Read-Host "  Voce ja tem o banco 'aqualog' com as tabelas? [1] Sim, pular / [2] Nao, aplicar schema.sql agora"
+    $schemaOpt = Read-Host "  Aplicar schema.sql agora? [1] Nao, pular / [2] Sim, criar banco e tabelas"
 } catch {
     $schemaOpt = "1"
 }
@@ -129,14 +132,20 @@ if ($schemaOpt -eq "2") {
     if ([string]::IsNullOrWhiteSpace($mysqlUser)) { $mysqlUser = "root" }
     $mysqlPass = Read-Host "  Senha MySQL" -AsSecureString
     $mysqlPassText = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($mysqlPass))
-    $mysqlArgs = "-u $mysqlUser", "-p$mysqlPassText"
 
-    Get-Content -LiteralPath $SCHEMA_SQL | & cmd /c "mysql $mysqlArgs" 2>$null
-    if ($LASTEXITCODE -ne 0) {
+    # Cria um .bat temporario para contornar redirecionamento de entrada do PowerShell
+    $tempBat = Join-Path $env:TEMP "apply_schema_$((Get-Random)).bat"
+    $mysqlCmdLine = "mysql -u $mysqlUser -p$mysqlPassText < `"$SCHEMA_SQL`""
+    Set-Content -LiteralPath $tempBat -Value $mysqlCmdLine -Encoding UTF8
+    & cmd /c "`"$tempBat`"" 2>$null
+    $batResult = $LASTEXITCODE
+    Remove-Item -LiteralPath $tempBat -Force -ErrorAction SilentlyContinue
+
+    if ($batResult -ne 0) {
         Write-Host "  !  Nao foi possivel aplicar o schema agora." -ForegroundColor Yellow
         Write-Host "     Aplique manualmente depois: mysql -u root -p < backend\schema.sql" -ForegroundColor Yellow
     } else {
-        Write-Host "  OK  Tabelas criadas." -ForegroundColor Green
+        Write-Host "  OK  Banco e tabelas criados." -ForegroundColor Green
     }
 } else {
     Write-Host "  OK  Pulando schema." -ForegroundColor Green
