@@ -1405,6 +1405,13 @@
       <div id="avisoLojaFechada" class="client-notice" style="border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.06); color: #fca5a5;">
         A loja está fechada no momento. Você pode navegar os produtos mas não será possível finalizar pedidos.
       </div>
+      <div id="geoPermissionNotice" class="geo-permission-notice">
+        <div>
+          <strong>Permita sua localização</strong>
+          <span>Isso ajuda a entrega e o rastreamento ficarem mais precisos. O pedido continua usando o endereço informado.</span>
+        </div>
+        <button type="button" onclick="capturarLocalizacaoCliente(true)">Permitir</button>
+      </div>
       <div id="clienteHome" class="client-home">
         <div class="client-action-grid">
           <button id="homeComprar" class="client-action-card" type="button" onclick="abrirModoCliente('comprar')">
@@ -1423,7 +1430,7 @@
             <span>Fale com a distribuidora sobre um pedido.</span>
           </button>
         </div>
-        <div class="client-quick-status">Acompanhe tudo pelo número do pedido e telefone.</div>
+        <div class="client-quick-status">Acompanhe tudo pelo número do pedido e telefone. Para rastreamento mais preciso, permita sua localização.</div>
       </div>
       <div id="productArea" class="product-area hidden">
         <div class="product-area-head">
@@ -2405,7 +2412,36 @@
       });
     }
 
-    async function carregar() {
+    function capturarLocalizacaoCliente(forcarAviso) {
+      if (!navigator.geolocation) {
+        atualizarAvisoLocalizacao('indisponivel');
+        return;
+      }
+      var geoNegado = localStorage.getItem('aqualog_geo_negado');
+      if (geoNegado && !forcarAviso) {
+        atualizarAvisoLocalizacao('negado');
+        return;
+      }
+      if (forcarAviso) atualizarAvisoLocalizacao('pedir');
+      navigator.geolocation.getCurrentPosition(function(pos) {
+        clienteGeoAtual = {
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude
+        };
+        localStorage.removeItem('aqualog_geo_negado');
+        atualizarAvisoLocalizacao('ok');
+      }, function(err) {
+        clienteGeoAtual = null;
+        if (err && err.code === err.PERMISSION_DENIED) {
+          localStorage.setItem('aqualog_geo_negado', '1');
+          atualizarAvisoLocalizacao('negado');
+        } else {
+          atualizarAvisoLocalizacao('pedir');
+        }
+      }, { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 });
+    }
+
+async function carregar() {
       var cfg = await fetch('/api/v1/site/config').then(function(r) { return r.json(); }).catch(function() { return {}; });
       aplicarConfiguracoesCliente(cfg.data || {});
       pixChave = cfg.data && cfg.data.pix_chave ? cfg.data.pix_chave : '';
@@ -2769,8 +2805,10 @@
     restaurarDadosCliente();
     renderPedidosSalvos();
     prepararAutocompleteEnderecoCliente();
+    capturarLocalizacaoCliente();
     abrirModoCliente('inicio');
     carregar();
+  </script>
   </script>
 </body>
 </html>
