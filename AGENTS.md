@@ -12,7 +12,7 @@ backend/
   database.py          # Pool de conexões MySQL
   models.py            # Pydantic models
   sse_manager.py       # SSE para admin em tempo real
-  routes/              # admin, clientes, entregadores, pedidos, produtos, site
+  routes/              # admin, clientes, entregadores, pedidos, produtos, site, suporte, configuracoes, cupons, backup, deliveries
   tests/test_api.py    # Testes unitários
   schema.sql           # Schema MySQL
 frontend/
@@ -21,6 +21,16 @@ frontend/
   entregador.html      # Tela do entregador
   style.css
   js/
+scripts/
+  setup.bat            # Instalador automatico (Windows CMD)
+  setup.ps1            # Instalador automatico (PowerShell)
+  iniciar_local.bat    # Inicia servidor localmente
+  iniciar_local.ps1    # Inicia servidor localmente (PowerShell)
+  iniciar_com_tunel.bat# Inicia servidor + tunel Cloudflare (acesso externo)
+  iniciar_com_tunel.ps1# Inicia servidor + tunel Cloudflare (PowerShell)
+  parar_server.bat     # Para processos do AquaLog
+  parar_server.ps1     # Para processos do AquaLog (PowerShell)
+  wait-for-db.sh       # Aguarda o banco ficar disponível
 ```
 
 ## Fluxo principal

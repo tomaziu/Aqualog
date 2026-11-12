@@ -40,7 +40,7 @@
   - `GET /api/v1/site/pedidos/{id}?telefone=...`
 - Criação de pedido pelo site com cadastro/atualização de cliente por telefone
 - Consulta de status pelo cliente no site
-- Abertura automática da tela do cliente no `iniciar_tudo.bat`
+- Abertura automática da tela do cliente no `scripts\iniciar_com_tunel.bat`
 
 ### Modificado
 - Fluxo principal passa a ser site do cliente + painel admin + tela do entregador

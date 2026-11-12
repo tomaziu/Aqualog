@@ -89,7 +89,8 @@ aqualog_projeto/
 │   ├── style.css
 │   └── js/                  # JavaScript do admin
 ├── Makefile                 # Atalhos (make dev, make test…)
-├── iniciar_tudo.bat         # Sobe tudo no Windows (com tunnel)
+├── scripts/iniciar_com_tunel.bat   # Sobe servidor + tunel Cloudflare
+├── scripts/iniciar_local.bat       # Sobe so o servidor localmente
 ├── README.md                # Visão geral do projeto
 └── INSTALACAO.md            # Este guia
 ```
@@ -175,7 +176,7 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 Ou use o atalho da raiz do projeto:
 
 ```text
-iniciar_tudo.bat
+scripts\iniciar_com_tunel.bat
 ```
 
 Esse script:

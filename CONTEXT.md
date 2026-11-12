@@ -73,7 +73,7 @@ aqualog_projeto/
 │   │   └── rastreamento_entregas.md
 │   └── logs/
 ├── Makefile
-└── iniciar_tudo.bat
+└── scripts\iniciar_com_tunel.bat
 ```
 
 ## Convenções e Decisões de Arquitetura

@@ -11,7 +11,7 @@ if errorlevel 1 (
   set "CLOUDFLARED=C:\Users\Admin\AppData\Local\Microsoft\WinGet\Packages\Cloudflare.cloudflared_Microsoft.Winget.Source_8wekyb3d8bbwe\cloudflared.exe"
 )
 
-cd /d "%~dp0backend"
+cd /d "%~dp0..\backend"
 echo Aplicando migracoes...
 "venv\Scripts\python" migrate_site_features.py
 if errorlevel 1 (
