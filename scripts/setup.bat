@@ -1,4 +1,3 @@
-
 @echo off
 setlocal DisableDelayedExpansion
 title AquaLog - Instalador Automatico
@@ -150,18 +149,30 @@ echo Banco selecionado: %BANCO_NOME%
 echo.
 
 REM ==================================================
-REM CRIAR OU ATUALIZAR ENV
+REM SENHA DO MYSQL (UMA UNICA VEZ, USADA NO .env E NA CONEXAO)
 REM ==================================================
 
-echo Configurando arquivo .env...
-
+set "AQUALOG_DB_PASSWORD="
 set "AQUALOG_ENV_FILE=%ENV_FILE%"
 
-REM Prompt para senha do MySQL (sera salva no .env)
-set "AQUALOG_DB_PASSWORD="
-set /p "AQUALOG_DB_PASSWORD=Digite a senha do MySQL root (Enter se nao houver): "
+echo ========================================
+echo   AUTENTICACAO DO MYSQL
+echo ========================================
+echo.
+echo Informe a senha do usuario root.
+echo Se o root nao possuir senha, pressione Enter.
+echo.
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:AQUALOG_ENV_FILE; $db=$env:AQUALOG_DB_NAME.Trim(); $pw=$env:AQUALOG_DB_PASSWORD; if (!(Test-Path -LiteralPath $p)) { $lines=@('# MySQL','DB_HOST=localhost','DB_PORT=3306','DB_USER=root','DB_PASSWORD='+$pw,'DB_NAME='+$db,'','# Auth','JWT_SECRET=aqualog_jwt_secret_change_in_production','ADMIN_PASSWORD=admin123','','# Pagamento','PIX_CHAVE=','MERCADO_PAGO_ACCESS_TOKEN=','','# Servidor','PORT=8000'); [IO.File]::WriteAllLines($p,$lines,[Text.UTF8Encoding]::new($false)); } else { $lines=[IO.File]::ReadAllLines($p); $foundDb=$false; $foundPw=$false; $out=[Collections.Generic.List[string]]::new(); foreach($line in $lines) { if($line -match '^\s*DB_NAME\s*=') { $out.Add('DB_NAME='+$db); $foundDb=$true } elseif($line -match '^\s*DB_PASSWORD\s*=') { $out.Add('DB_PASSWORD='+$pw); $foundPw=$true } else { $out.Add($line) } }; if(!$foundDb) { $out.Add('DB_NAME='+$db) }; if(!$foundPw) { $out.Add('DB_PASSWORD='+$pw) }; [IO.File]::WriteAllLines($p,$out,[Text.UTF8Encoding]::new($false)) }; Write-Host 'Arquivo .env configurado.'"
+set /p "AQUALOG_DB_PASSWORD=Senha do MySQL root: "
+
+REM ==================================================
+REM CRIAR OU ATUALIZAR .env (valor sempre entre aspas)
+REM ==================================================
+
+echo.
+echo Configurando arquivo .env...
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:AQUALOG_ENV_FILE; $db=$env:AQUALOG_DB_NAME.Trim(); $pw=[string]$env:AQUALOG_DB_PASSWORD; $q=[string][char]34; $bs=[string][char]92; $ev=$q+$pw.Replace($bs,$bs+$bs).Replace($q,$bs+$q)+$q; $u=New-Object System.Text.UTF8Encoding($false); if(-not (Test-Path -LiteralPath $p)){ $l=@('# MySQL','DB_HOST=localhost','DB_PORT=3306','DB_USER=root',('DB_PASSWORD='+$ev),('DB_NAME='+$db),'','# Auth','JWT_SECRET=aqualog_jwt_secret_change_in_production','ADMIN_PASSWORD=admin123','','# Pagamento','PIX_CHAVE=','MERCADO_PAGO_ACCESS_TOKEN=','','# Servidor','PORT=8000'); [IO.File]::WriteAllLines($p,$l,$u) } else { $o=New-Object System.Collections.Generic.List[string]; $tdb=$false; $tpw=$false; foreach($x in [IO.File]::ReadAllLines($p)){ if($x -match '^\s*DB_NAME\s*='){ $o.Add('DB_NAME='+$db); $tdb=$true } elseif($x -match '^\s*DB_PASSWORD\s*='){ $o.Add('DB_PASSWORD='+$ev); $tpw=$true } else { $o.Add($x) } }; if(-not $tdb){ $o.Add('DB_NAME='+$db) }; if(-not $tpw){ $o.Add('DB_PASSWORD='+$ev) }; [IO.File]::WriteAllLines($p,$o,$u) }; Write-Host 'Arquivo .env configurado.'"
 
 if errorlevel 1 goto ERRO_ENV
 
@@ -171,17 +182,8 @@ echo.
 if not exist "%SCHEMA_SQL%" goto ERRO_SCHEMA
 
 REM ==================================================
-REM CONFIGURAR AUTENTICACAO MYSQL UMA UNICA VEZ
+REM PREPARAR mysql.cnf TEMPORARIO (usa a mesma senha)
 REM ==================================================
-
-echo ========================================
-echo   AUTENTICACAO DO MYSQL
-echo ========================================
-echo.
-echo Informe a senha do usuario root.
-echo A senha sera solicitada apenas uma vez.
-echo Se o root nao possuir senha, pressione Enter.
-echo.
 
 set "MYSQL_TEMP_DIR=%TEMP%\AquaLog_MySQL_%RANDOM%_%RANDOM%"
 set "MYSQL_CNF=%MYSQL_TEMP_DIR%\mysql.cnf"
@@ -189,22 +191,15 @@ set "MYSQL_CNF=%MYSQL_TEMP_DIR%\mysql.cnf"
 md "%MYSQL_TEMP_DIR%" >nul 2>&1
 if errorlevel 1 goto ERRO_AUTH
 
-REM Restringir acesso ao arquivo temporario ao usuario atual.
-
 icacls "%MYSQL_TEMP_DIR%" /inheritance:r /grant:r "%USERDOMAIN%\%USERNAME%:(OI)(CI)F" >nul 2>&1
-
 if errorlevel 1 goto ERRO_AUTH
-
-REM Solicitar senha com entrada protegida.
-REM A senha nao passa pela linha de comando do CMD.
 
 set "AQUALOG_MYSQL_CNF=%MYSQL_CNF%"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=$env:AQUALOG_MYSQL_CNF; $sec=Read-Host -Prompt 'Senha do MySQL root (Enter se nao houver)' -AsSecureString; $ptr=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec); try { $plain=[Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr); $q=[char]34; $bs=[char]92; $escaped=$plain.Replace([string]$bs,[string]$bs+[string]$bs).Replace([string]$q,[string]$bs+[string]$q); $content='[client]'+[Environment]::NewLine+'user=root'+[Environment]::NewLine+'host=localhost'+[Environment]::NewLine+'port=3306'+[Environment]::NewLine+'protocol=tcp'+[Environment]::NewLine; if($plain.Length -gt 0) { $content+='password='+$q+$escaped+$q+[Environment]::NewLine }; [IO.File]::WriteAllText($f,$content,[Text.Encoding]::ASCII); Write-Host 'Autenticacao preparada.' } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr); $plain=$null; $sec.Dispose() }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$f=$env:AQUALOG_MYSQL_CNF; $pw=[string]$env:AQUALOG_DB_PASSWORD; $q=[char]34; $bs=[char]92; $nl=[Environment]::NewLine; $content='[client]'+$nl+'user=root'+$nl+'host=localhost'+$nl+'port=3306'+$nl+'protocol=tcp'+$nl; if($pw.Length -gt 0) { $escaped=$pw.Replace([string]$bs,[string]$bs+[string]$bs).Replace([string]$q,[string]$bs+[string]$q); $content+='password='+$q+$escaped+$q+$nl }; [IO.File]::WriteAllText($f,$content,[Text.Encoding]::ASCII); Write-Host 'Autenticacao preparada.'"
 
 if errorlevel 1 goto ERRO_AUTH
 
-echo.
 echo OK: Autenticacao configurada.
 echo.
 
@@ -310,7 +305,6 @@ echo O que foi feito:
 echo   - Ambiente virtual Python verificado
 echo   - Dependencias instaladas
 echo   - MySQL localizado e conectado
-echo   - Autenticacao reutilizada
 echo   - Arquivo .env configurado
 echo   - Banco de dados verificado
 echo   - Schema aplicado quando necessario

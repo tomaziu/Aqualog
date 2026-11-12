@@ -3,19 +3,105 @@
 # Execute com: .\scripts\setup.ps1  (ou PowerShell -ExecutionPolicy Bypass -File scripts\setup.ps1)
 
 $ErrorActionPreference = "Continue"
-$SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$SCRIPT_DIR   = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $PROJECT_ROOT = Resolve-Path (Join-Path $SCRIPT_DIR "..")
 Set-Location -LiteralPath $PROJECT_ROOT
 
 $BACKEND_DIR = Join-Path $PROJECT_ROOT "backend"
-$VENV_DIR = Join-Path $BACKEND_DIR "venv"
-$ENV_FILE = Join-Path $BACKEND_DIR ".env"
-$SCHEMA_SQL = Join-Path $BACKEND_DIR "schema.sql"
+$VENV_DIR    = Join-Path $BACKEND_DIR "venv"
+$ENV_FILE    = Join-Path $BACKEND_DIR ".env"
+$SCHEMA_SQL  = Join-Path $BACKEND_DIR "schema.sql"
+
+$UTF8_SEM_BOM = New-Object System.Text.UTF8Encoding($false)
 
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "  AquaLog - Instalador Automatico" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
+
+# --------------------------------------------------
+# Funcoes auxiliares
+# --------------------------------------------------
+
+# Escreve valor de .env entre aspas, escapando \ e "
+function Format-EnvValue {
+    param([AllowNull()][AllowEmptyString()][string]$Valor)
+    if ($null -eq $Valor) { $Valor = "" }
+    $escaped = $Valor.Replace('\', '\\').Replace('"', '\"')
+    return '"' + $escaped + '"'
+}
+
+# Le o .env como linhas, sem \r
+function Read-EnvLinhas {
+    param([string]$Caminho)
+    if (-not (Test-Path -LiteralPath $Caminho)) { return @() }
+    return [string[]]([IO.File]::ReadAllText($Caminho) -split "`r?`n")
+}
+
+# Grava o .env sem BOM e com \n
+function Write-EnvLinhas {
+    param([string]$Caminho, [string[]]$Linhas)
+    [IO.File]::WriteAllText($Caminho, (($Linhas -join "`n") + "`n"), $UTF8_SEM_BOM)
+}
+
+# Define ou troca uma chave no .env, preservando o resto
+function Set-EnvChave {
+    param([string[]]$Linhas, [string]$Chave, [string]$Valor)
+    $achou = $false
+    $saida = New-Object System.Collections.Generic.List[string]
+    foreach ($l in $Linhas) {
+        if ($l -match "^\s*$([regex]::Escape($Chave))\s*=") {
+            $saida.Add("$Chave=$Valor")
+            $achou = $true
+        } else {
+            $saida.Add($l)
+        }
+    }
+    if (-not $achou) { $saida.Add("$Chave=$Valor") }
+    return ,$saida.ToArray()
+}
+
+# Executa mysql sem passar a senha pela linha de comando
+function Invoke-MySql {
+    param([string]$Exe, [string]$Senha, [string]$Sql, [string]$ArquivoSql = $null, [string]$Banco = $null)
+
+    $cnf = Join-Path $env:TEMP ("aqualog_" + [guid]::NewGuid().ToString("N") + ".cnf")
+    try {
+        $linhasCnf = @("[client]", "user=root", "host=localhost", "port=3306", "protocol=tcp")
+        if (-not [string]::IsNullOrEmpty($Senha)) {
+            $linhasCnf += "password=" + $Senha.Replace('\', '\\').Replace('"', '\"').Insert(0, '"').Insert(0, 'password=').Substring(9) + '"'
+        }
+        [IO.File]::WriteAllText($cnf, (($linhasCnf -join "`n") + "`n"), $UTF8_SEM_BOM)
+
+        $args = @("--defaults-extra-file=$cnf")
+        if ($Banco) { $args += $Banco }
+
+        if ($ArquivoSql) {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = $Exe
+            $psi.Arguments = ($args | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
+            $psi.RedirectStandardInput = $true
+            $psi.RedirectStandardOutput = $true
+            $psi.RedirectStandardError = $true
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            $p = [System.Diagnostics.Process]::Start($psi)
+            $p.StandardInput.Write([IO.File]::ReadAllText($ArquivoSql, [Text.Encoding]::UTF8))
+            $p.StandardInput.Close()
+            $p.StandardOutput.ReadToEnd() | Out-Null
+            $p.StandardError.ReadToEnd() | Out-Null
+            $p.WaitForExit()
+            return $p.ExitCode
+        } else {
+            $args += @("-N", "-B", "-e", $Sql)
+            $saida = & $Exe @args 2>$null
+            if ($LASTEXITCODE -ne 0) { return @{ Codigo = $LASTEXITCODE; Saida = $saida } }
+            return @{ Codigo = 0; Saida = $saida }
+        }
+    } finally {
+        Remove-Item -LiteralPath $cnf -Force -ErrorAction SilentlyContinue
+    }
+}
 
 # --------------------------------------------------
 # 1) Verificar Python
@@ -53,14 +139,13 @@ Write-Host ""
 # 3) Instalar dependencias
 # --------------------------------------------------
 Write-Host "[3/5] Instalando dependencias Python (pode demorar alguns minutos)..." -ForegroundColor Yellow
-$activateScript = Join-Path $VENV_DIR "Scripts\Activate.ps1"
-& $activateScript | Out-Null
+$venvPython = Join-Path $VENV_DIR "Scripts\python.exe"
 
 Write-Host "    Atualizando pip..." -ForegroundColor DarkGray
-& $pythonCmd.Source -m pip install --upgrade pip >$null 2>$null
+& $venvPython -m pip install --upgrade pip *> $null
 
 Write-Host "    Instalando requirements.txt..." -ForegroundColor DarkGray
-$pipResult = & $pythonCmd.Source -m pip install -r (Join-Path $BACKEND_DIR "requirements.txt") 2>$null
+& $venvPython -m pip install -r (Join-Path $BACKEND_DIR "requirements.txt")
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  X Falha ao instalar dependencias." -ForegroundColor Red
     Write-Host "    Tente rodar manualmente:" -ForegroundColor Yellow
@@ -74,10 +159,9 @@ Write-Host ""
 # 4) Verificar MySQL
 # --------------------------------------------------
 Write-Host "[4/5] Verificando MySQL..." -ForegroundColor Yellow
-$mysqlExecutable = Get-Command mysql -ErrorAction SilentlyContinue
-if ($mysqlExecutable) {
-    $mysqlExecutable = $mysqlExecutable.Source
-}
+$mysqlExecutable = $null
+$mysqlCmd = Get-Command mysql -ErrorAction SilentlyContinue
+if ($mysqlCmd) { $mysqlExecutable = $mysqlCmd.Source }
 
 if (-not $mysqlExecutable) {
     $versoes = @("8.4", "8.3", "8.2", "8.1", "8.0", "5.7")
@@ -88,20 +172,16 @@ if (-not $mysqlExecutable) {
     }
     $caminhosComuns += "C:\mysql\bin\mysql.exe"
     foreach ($caminho in $caminhosComuns) {
-        if (Test-Path -LiteralPath $caminho) {
-            $mysqlExecutable = $caminho
-            break
-        }
+        if (Test-Path -LiteralPath $caminho) { $mysqlExecutable = $caminho; break }
     }
 }
 
 if (-not $mysqlExecutable) {
     Write-Host "  X MySQL nao encontrado!" -ForegroundColor Red
-    Write-Host "    O AquaLog precisa do MySQL para funcionar." -ForegroundColor Red
     Write-Host "    1. Baixe e instale: https://www.mysql.com/downloads/" -ForegroundColor Red
-    Write-Host "    2. Durante a instalacao, anote a senha do usuario root." -ForegroundColor Red
-    Write-Host "    3. Adicione o MySQL ao PATH do Windows ou instale na pasta padrao." -ForegroundColor Red
-    Write-Host "    4. Depois rode este script novamente." -ForegroundColor Red
+    Write-Host "    2. Anote a senha do usuario root durante a instalacao." -ForegroundColor Red
+    Write-Host "    3. Adicione o MySQL ao PATH ou instale na pasta padrao." -ForegroundColor Red
+    Write-Host "    4. Rode este script novamente." -ForegroundColor Red
     exit 1
 }
 Write-Host "  OK  MySQL encontrado ($mysqlExecutable)" -ForegroundColor Green
@@ -112,170 +192,93 @@ Write-Host ""
 # --------------------------------------------------
 Write-Host "[5/5] Configurando arquivo .env e banco de dados..." -ForegroundColor Yellow
 
-# Perguntar nome do banco de dados
 $bancoPadrao = "aqualog"
-Write-Host "  Nome do banco de dados (padrao: $bancoPadrao):" -ForegroundColor DarkGray
-$bancoNome = Read-Host "  Digite o nome ou pressione Enter para usar '$bancoPadrao'"
-if ([string]::IsNullOrWhiteSpace($bancoNome)) {
-    $bancoNome = $bancoPadrao
+$bancoNome = Read-Host "  Nome do banco (Enter para '$bancoPadrao')"
+if ([string]::IsNullOrWhiteSpace($bancoNome)) { $bancoNome = $bancoPadrao }
+$bancoNome = $bancoNome.Trim()
+if ($bancoNome -notmatch '^[a-zA-Z0-9_]+$') {
+    Write-Host "  X Nome de banco invalido. Use somente letras, numeros e underline." -ForegroundColor Red
+    exit 1
 }
 Write-Host "  Usando banco: $bancoNome" -ForegroundColor Green
 Write-Host ""
 
-# .env com valores padrao
-$defaultEnv = @"
-# MySQL
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=$bancoNome
+# Senha pedida uma unica vez (Enter = root sem senha)
+$senhaSegura = Read-Host "  Senha do MySQL root (Enter se nao houver)" -AsSecureString
+$ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($senhaSegura)
+try { $senhaMysql = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
+finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+if ($null -eq $senhaMysql) { $senhaMysql = "" }
 
-# Auth
-JWT_SECRET=aqualog_jwt_secret_change_in_production
-ADMIN_PASSWORD=admin123
+# Monta o .env
+$padraoEnv = @(
+    "# MySQL",
+    "DB_HOST=localhost",
+    "DB_PORT=3306",
+    "DB_USER=root",
+    "DB_PASSWORD=",
+    "DB_NAME=",
+    "",
+    "# Auth",
+    "JWT_SECRET=aqualog_jwt_secret_change_in_production",
+    "ADMIN_PASSWORD=admin123",
+    "",
+    "# Pagamento",
+    "PIX_CHAVE=",
+    "MERCADO_PAGO_ACCESS_TOKEN=",
+    "",
+    "# Servidor",
+    "PORT=8000"
+)
 
-# Pagamento
-PIX_CHAVE=
-MERCADO_PAGO_ACCESS_TOKEN=
-
-# Servidor
-PORT=8000
-"@
-
-if (-not (Test-Path -LiteralPath $ENV_FILE)) {
-    Set-Content -LiteralPath $ENV_FILE -Value $defaultEnv -Encoding UTF8
-    Write-Host "  OK  backend.env criado com valores padrao." -ForegroundColor Green
-} else {
-    # Atualiza apenas o DB_NAME se ja existir, preservando o restante
-    $conteudoEnv = Get-Content -LiteralPath $ENV_FILE -Raw
-    $linhas = @()
-    $encontrouDB_NAME = $false
-    foreach ($linha in $conteudoEnv -split "`n") {
-        if ($linha -match '^DB_NAME=') {
-            $linhas += "DB_NAME=$bancoNome"
-            $encontrouDB_NAME = $true
-        } else {
-            $linhas += $linha
-        }
-    }
-    if (-not $encontrouDB_NAME) {
-        $linhas += "DB_NAME=$bancoNome"
-    }
-    $conteudoEnv = $linhas -join "`n"
-    Set-Content -LiteralPath $ENV_FILE -Value $conteudoEnv -Encoding UTF8
-    Write-Host "  OK  backend.env ja existe (atualizado DB_NAME=$bancoNome)." -ForegroundColor Green
-}
+$linhasEnv = if (Test-Path -LiteralPath $ENV_FILE) { Read-EnvLinhas $ENV_FILE } else { $padraoEnv }
+$linhasEnv = Set-EnvChave -Linhas $linhasEnv -Chave "DB_USER" -Valor "root"
+$linhasEnv = Set-EnvChave -Linhas $linhasEnv -Chave "DB_PASSWORD" -Valor (Format-EnvValue $senhaMysql)
+$linhasEnv = Set-EnvChave -Linhas $linhasEnv -Chave "DB_NAME" -Valor $bancoNome
+Write-EnvLinhas -Caminho $ENV_FILE -Linhas $linhasEnv
+Write-Host "  OK  backend\.env configurado (DB_NAME=$bancoNome)." -ForegroundColor Green
 Write-Host ""
 
-# Funcao para executar query no MySQL
-function Executar-MySqlQuery {
-    param([string]$Query, [securestring]$Senha = $null)
-    if ($Senha) {
-        $senhaTexto = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Senha))
-        $cmdLine = """$mysqlExecutable"" -u root -p$senhaTexto -e ""$Query"""
-    } else {
-        $cmdLine = """$mysqlExecutable"" -u root -e ""$Query"""
-    }
-    & cmd /c $cmdLine 2>$null
-    return $LASTEXITCODE
+# Verifica conexao
+Write-Host "  Testando conexao com MySQL..." -ForegroundColor Yellow
+$teste = Invoke-MySql -Exe $mysqlExecutable -Senha $senhaMysql -Sql "SELECT 1;"
+if ($teste.Codigo -ne 0) {
+    Write-Host "  X Nao foi possivel conectar ao MySQL. Verifique a senha e se o servico esta rodando." -ForegroundColor Red
+    exit 1
+}
+Write-Host "  OK  Conexao estabelecida." -ForegroundColor Green
+
+# Cria banco se nao existir
+$criar = Invoke-MySql -Exe $mysqlExecutable -Senha $senhaMysql -Sql "CREATE DATABASE IF NOT EXISTS ``$bancoNome`` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+if ($criar.Codigo -ne 0) {
+    Write-Host "  X Falha ao criar o banco '$bancoNome'." -ForegroundColor Red
+    exit 1
 }
 
-# Verificar se o banco ja tem tabelas criadas
-Write-Host "  Verificando se o banco '$bancoNome' ja esta configurado..." -ForegroundColor Yellow
-
-$tabelasExistem = $false
-$queryTeste = "USE $bancoNome; SHOW TABLES LIKE 'pedidos';"
-$cmdLineTeste = """$mysqlExecutable"" -u root -e ""$queryTeste"""
-$testeTabelas = & cmd /c $cmdLineTeste 2>$null
-if ($LASTEXITCODE -eq 0 -and $testeTabelas -match 'pedidos') {
-    $tabelasExistem = $true
+# Verifica se ja tem tabelas
+$contagem = Invoke-MySql -Exe $mysqlExecutable -Senha $senhaMysql -Sql "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$bancoNome';"
+$totalTabelas = 0
+if ($contagem.Codigo -eq 0 -and $contagem.Saida) {
+    [int]::TryParse(([string]($contagem.Saida | Select-Object -Last 1)).Trim(), [ref]$totalTabelas) | Out-Null
 }
 
-if ($tabelasExistem) {
-    Write-Host "  OK  Banco '$bancoNome' ja existe com tabelas criadas. Pulando aplicacao do schema." -ForegroundColor Green
+if ($totalTabelas -gt 0) {
+    Write-Host "  OK  Banco '$bancoNome' ja possui $totalTabelas tabela(s). Schema nao foi reaplicado." -ForegroundColor Green
 } else {
-    Write-Host "  Banco vazio ou nao existe. Criando banco e aplicando schema.sql..." -ForegroundColor Yellow
-
-    $criouBanco = $false
-
-    # Tentativa 1: root sem senha
-    Write-Host "    Tentando conectar como root (sem senha)..." -ForegroundColor DarkGray
-    $queryCreate = "CREATE DATABASE IF NOT EXISTS `$bancoNome` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-    $code = Executar-MySqlQuery -Query $queryCreate
-    if ($code -eq 0) {
-        Write-Host "  OK  Banco '$bancoNome' criado (root sem senha)." -ForegroundColor Green
-        $criouBanco = $true
-        $conteudoEnv = Get-Content -LiteralPath $ENV_FILE -Raw
-        $conteudoEnv = $conteudoEnv -replace '(?<=^DB_PASSWORD=).*$', ''
-        Set-Content -LiteralPath $ENV_FILE -Value $conteudoEnv -Encoding UTF8
-    } else {
-        Write-Host "    Nao conseguiu (sem senha)." -ForegroundColor DarkGray
-    }
-
-    # Tentativa 2: pedir senha
-    if (-not $criouBanco) {
-        Write-Host ""
-        $mysqlPass = Read-Host "  Informe a senha do MySQL (root) para criar o banco"
-        if ([string]::IsNullOrWhiteSpace($mysqlPass)) {
-            Write-Host "  !  Senha nao informada. Pulando criacao de tabelas." -ForegroundColor Yellow
-            Write-Host "     Aplique manualmente depois:" -ForegroundColor Yellow
-            Write-Host "       $mysqlExecutable -u root -p" -ForegroundColor Yellow
-            Write-Host "       mysql> CREATE DATABASE $bancoNome;" -ForegroundColor Yellow
-            Write-Host "       mysql> USE $bancoNome;" -ForegroundColor Yellow
-            Write-Host "       mysql> source backend\schema.sql" -ForegroundColor Yellow
-        } else {
-            $secPass = $mysqlPass | ConvertTo-SecureString -AsPlainText -Force
-            $queryCreate = "CREATE DATABASE IF NOT EXISTS `$bancoNome` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-            $code = Executar-MySqlQuery -Query $queryCreate -Senha $secPass
-            if ($code -eq 0) {
-                Write-Host "  OK  Banco '$bancoNome' criado com sucesso." -ForegroundColor Green
-                $criouBanco = $true
-                $conteudoEnv = Get-Content -LiteralPath $ENV_FILE -Raw
-                $conteudoEnv = $conteudoEnv -replace '(?<=^DB_PASSWORD=).*$', $mysqlPass
-                Set-Content -LiteralPath $ENV_FILE -Value $conteudoEnv -Encoding UTF8
-            } else {
-                Write-Host "  !  Falha ao criar banco. Verifique a senha e se o MySQL esta rodando." -ForegroundColor Yellow
-            }
+    Write-Host "  Aplicando schema.sql no banco '$bancoNome'..." -ForegroundColor Yellow
+    $schemaConteudo = [IO.File]::ReadAllText($SCHEMA_SQL)
+    $schemaConteudo = [regex]::Replace($schemaConteudo, '(?i)\baqualog\b', $bancoNome)
+    $schemaTemp = Join-Path $env:TEMP ("aqualog_schema_" + [guid]::NewGuid().ToString("N") + ".sql")
+    [IO.File]::WriteAllText($schemaTemp, $schemaConteudo, $UTF8_SEM_BOM)
+    try {
+        $aplicar = Invoke-MySql -Exe $mysqlExecutable -Senha $senhaMysql -ArquivoSql $schemaTemp -Banco $bancoNome
+        if ($aplicar -ne 0) {
+            Write-Host "  X Falha ao aplicar schema.sql." -ForegroundColor Red
+            exit 1
         }
-    }
-
-    # Aplicar schema.sql se o banco foi criado
-    if ($criouBanco) {
-        Write-Host "  Aplicando schema.sql..." -ForegroundColor Yellow
-
-        $schemaConteudo = Get-Content -LiteralPath $SCHEMA_SQL -Raw
-        $schemaConteudo = $schemaConteudo -replace 'aqualog', $bancoNome
-        $schemaTemp = Join-Path $env:TEMP "aqualog_schema_$bancoNome.sql"
-        Set-Content -LiteralPath $schemaTemp -Value $schemaConteudo -Encoding UTF8
-
-        # Criar arquivo bat temporario para aplicar schema com redirecionamento
-        $batTemp = Join-Path $env:TEMP "aqualog_apply_$bancoNome.bat"
-        $batContent = """$mysqlExecutable"" -u root < ""$schemaTemp"""
-        Set-Content -LiteralPath $batTemp -Value $batContent -Encoding UTF8
-        & cmd /c $batTemp 2>$null
-        $code = $LASTEXITCODE
-
-        if ($code -eq 0) {
-            Write-Host "  OK  Tabelas criadas com sucesso." -ForegroundColor Green
-        } else {
-            if (-not [string]::IsNullOrWhiteSpace($mysqlPass)) {
-                $batContent2 = """$mysqlExecutable"" -u root -p$mysqlPass < ""$schemaTemp"""
-                Set-Content -LiteralPath $batTemp -Value $batContent2 -Encoding UTF8
-                & cmd /c $batTemp 2>$null
-                $code = $LASTEXITCODE
-                if ($code -eq 0) {
-                    Write-Host "  OK  Tabelas criadas com sucesso." -ForegroundColor Green
-                } else {
-                    Write-Host "  !  Falha ao aplicar schema.sql." -ForegroundColor Yellow
-                }
-            } else {
-                Write-Host "  !  Falha ao aplicar schema.sql." -ForegroundColor Yellow
-            }
-        }
-
+        Write-Host "  OK  Tabelas criadas com sucesso." -ForegroundColor Green
+    } finally {
         Remove-Item -LiteralPath $schemaTemp -Force -ErrorAction SilentlyContinue
-        Remove-Item -LiteralPath $batTemp -Force -ErrorAction SilentlyContinue
     }
 }
 Write-Host ""
@@ -290,8 +293,8 @@ Write-Host ""
 Write-Host "  O que foi feito:" -ForegroundColor Yellow
 Write-Host "    - Ambiente virtual Python criado (backend\venv)"
 Write-Host "    - Dependencias instaladas"
-Write-Host "    - Arquivo backend.env configurado (DB_NAME=$bancoNome)"
-Write-Host "    - Banco de dados e tabelas criados (se o MySQL estiver rodando)"
+Write-Host "    - Arquivo backend\.env configurado (DB_NAME=$bancoNome)"
+Write-Host "    - Banco de dados e tabelas verificados"
 Write-Host ""
 Write-Host "  Para iniciar o servidor:" -ForegroundColor Yellow
 Write-Host "    .\scripts\iniciar_local.ps1"
@@ -301,7 +304,7 @@ Write-Host "    Admin:      http://127.0.0.1:8000"
 Write-Host "    Cliente:    http://127.0.0.1:8000/cliente.html"
 Write-Host "    Entregador: http://127.0.0.1:8000/entregador.html"
 Write-Host ""
-Write-Host "  Login admin: senha admin123"
+Write-Host "  Login admin: senha definida no arquivo .env (ADMIN_PASSWORD)" -ForegroundColor Yellow
 Write-Host ""
 
 try { pause } catch {}
