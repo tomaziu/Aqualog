@@ -961,57 +961,6 @@
 
     .delivery-code-card.locked small { color: var(--yellow); }
 
-    /* ROUTE ALERT */
-    .route-alert {
-      display: grid;
-      grid-template-columns: 42px 1fr;
-      gap: 10px;
-      align-items: center;
-      margin-top: 14px;
-      padding: 13px;
-      border: 1px solid rgba(255,214,0,0.2);
-      background: rgba(255,214,0,0.06);
-      color: var(--yellow);
-    }
-
-    .route-alert span {
-      display: block;
-      margin-top: 2px;
-      color: var(--mid);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .route-icon {
-      width: 42px;
-      height: 42px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--yellow);
-      color: var(--navy);
-      font-size: 20px;
-      font-weight: 900;
-      clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
-    }
-
-    .route-alert a {
-      display: inline-block;
-      margin-top: 8px;
-      padding: 6px 14px;
-      background: var(--cyan);
-      color: var(--navy);
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      text-decoration: none;
-      clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
-    }
-
-    .route-alert a:hover { background: var(--yellow); }
-
     /* ORDER SUMMARY */
     .order-summary { display: grid; gap: 8px; }
 
@@ -1480,10 +1429,11 @@
             </div>
           </div>
 
-          <label for="email">E-mail para pagamento Pix</label>
-          <input id="email" type="email" placeholder="Opcional">
-
           <div class="row">
+            <div>
+              <label for="cep">CEP</label>
+              <input id="cep" required minlength="8" maxlength="9" placeholder="00000-000" pattern="[0-9]{5}-?[0-9]{3}">
+            </div>
             <div>
               <label for="endereco">Rua / avenida</label>
               <div id="enderecoSuggestWrap" class="address-suggest-client">
@@ -1499,8 +1449,23 @@
 
           <div class="row">
             <div>
+              <label for="complemento">Complemento</label>
+              <input id="complemento" maxlength="100" placeholder="Apto, bloco, casa, etc.">
+            </div>
+            <div>
               <label for="bairro">Bairro</label>
               <input id="bairro" required minlength="2" maxlength="100" placeholder="Bairro">
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="cidade">Cidade</label>
+              <input id="cidade" required minlength="2" maxlength="100" placeholder="Cidade">
+            </div>
+            <div>
+              <label for="uf">UF</label>
+              <input id="uf" required minlength="2" maxlength="2" placeholder="SP">
             </div>
           </div>
 
@@ -1628,6 +1593,23 @@
     var clienteGeoAtual = null;
     var timerEnderecoSugestao = null;
     var STORAGE_PEDIDOS = 'aqualog_pedidos';
+    var STORAGE_ENDERECOS_PRESET = 'aqualog_enderecos_preset';
+    var enderecosPreset = [];
+
+    function carregarEnderecosPreset() {
+      enderecosPreset = lerJson(STORAGE_ENDERECOS_PRESET, []);
+    }
+
+    function salvarEnderecoPreset(endereco) {
+      var existe = enderecosPreset.some(function(e) {
+        return e.endereco === endereco.endereco && e.numero_casa === endereco.numero_casa && e.bairro === endereco.bairro;
+      });
+      if (!existe) {
+        enderecosPreset.unshift(endereco);
+        if (enderecosPreset.length > 10) enderecosPreset = enderecosPreset.slice(0, 10);
+        localStorage.setItem(STORAGE_ENDERECOS_PRESET, JSON.stringify(enderecosPreset));
+      }
+    }
 
     function dinheiro(v) {
       return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -1740,10 +1722,13 @@
       localStorage.setItem(STORAGE_CLIENTE, JSON.stringify({
         nome: payload.nome,
         telefone: payload.telefone,
-        email: payload.email || '',
+        cep: payload.cep || '',
         endereco: payload.endereco,
         numeroCasa: payload.numero_casa || '',
+        complemento: payload.complemento || '',
         bairro: payload.bairro,
+        cidade: payload.cidade || '',
+        uf: payload.uf || '',
         referencia: payload.referencia || ''
       }));
     }
@@ -1751,7 +1736,7 @@
     function restaurarDadosCliente() {
       var dados = lerJson(STORAGE_CLIENTE, null);
       if (!dados) return;
-      ['nome', 'telefone', 'email', 'endereco', 'bairro', 'referencia'].forEach(function(id) {
+      ['nome', 'telefone', 'cep', 'endereco', 'bairro', 'cidade', 'uf', 'referencia', 'complemento'].forEach(function(id) {
         if (dados[id] && document.getElementById(id)) document.getElementById(id).value = dados[id];
       });
       if (dados.numeroCasa && document.getElementById('numeroCasa')) document.getElementById('numeroCasa').value = dados.numeroCasa;
@@ -2014,16 +1999,10 @@
       return mapa[status] || String(status || 'Pix').replaceAll('_', ' ');
     }
 
-    function renderAvisoRota(pedido) {
-      if (!pedido || pedido.status !== 'saiu_para_entrega') return '';
-      return '<div class="route-alert">' +
-        '<div class="route-icon">&#10146;</div>' +
-        '<div><strong>Entregador a caminho</strong><span>Seu pedido já saiu e está indo para o endereço informado.</span>' +
-        '</div></div>';
-    }
+    
 
     function renderResumoPedido(p) {
-      var endereco = [p.endereco, p.numero_casa, p.bairro].filter(Boolean).join(', ');
+      var endereco = [p.cep, p.endereco, p.numero_casa, p.complemento, p.bairro, p.cidade, p.uf].filter(Boolean).join(', ');
       var resumoProdutos = p.produto || '-';
       var descontoLinha = Number(p.desconto_valor || 0) > 0
         ? '<div class="summary-item"><span>Cupom</span><b>' + escapeHtml(p.cupom_codigo || '-') + ' - ' + dinheiro(p.desconto_valor) + '</b></div>'
@@ -2320,8 +2299,16 @@
     function aplicarSugestaoEnderecoCliente(s) {
       document.getElementById('endereco').value = s.endereco || '';
       document.getElementById('bairro').value = s.bairro || '';
+      document.getElementById('cidade').value = s.cidade || '';
+      document.getElementById('uf').value = s.uf || '';
+      if (s.cep && !document.getElementById('cep').value) {
+        document.getElementById('cep').value = s.cep;
+      }
       if (s.numero_casa && !document.getElementById('numeroCasa').value) {
         document.getElementById('numeroCasa').value = s.numero_casa;
+      }
+      if (s.complemento && !document.getElementById('complemento').value) {
+        document.getElementById('complemento').value = s.complemento;
       }
       if (s.referencia && !document.getElementById('referencia').value) {
         document.getElementById('referencia').value = s.referencia;
@@ -2340,7 +2327,7 @@
       box.innerHTML = lista.map(function(s, i) {
         return '<button type="button" data-index="' + i + '">' +
           '<strong>' + escapeHtml(s.endereco || '') + '</strong>' +
-          '<span>' + escapeHtml([s.bairro, s.numero_casa ? 'Nº ' + s.numero_casa : '', s.cidade || s.referencia].filter(Boolean).join(' - ')) + '</span>' +
+          '<span>' + escapeHtml([s.bairro, s.numero_casa ? 'Nº ' + s.numero_casa : '', s.cidade || '', s.uf || '', s.referencia].filter(Boolean).join(' - ')) + '</span>' +
         '</button>';
       }).join('');
       box.querySelectorAll('button').forEach(function(btn) {
@@ -2352,8 +2339,15 @@
     }
 
     async function buscarSugestoesEnderecoCliente(termo) {
-      termo = String(termo || '').trim();
+      termo = String(termo || '').trim().toLowerCase();
       var box = document.getElementById('enderecoSugestoes');
+      var locais = enderecosPreset.filter(function(e) {
+        return !termo || (e.endereco && e.endereco.toLowerCase().includes(termo)) || (e.bairro && e.bairro.toLowerCase().includes(termo));
+      });
+      if (locais.length) {
+        renderSugestoesEnderecoCliente(locais);
+        return;
+      }
       if (termo.length < 2) {
         box.classList.remove('ativo');
         return;
@@ -2386,6 +2380,10 @@
         timerEnderecoSugestao = setTimeout(function() {
           buscarSugestoesEnderecoCliente(input.value);
         }, 220);
+        clearTimeout(timerNominatim);
+        timerNominatim = setTimeout(function() {
+          buscarNominatimAutocomplete(input.value);
+        }, 600);
       });
       input.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -2412,6 +2410,40 @@
       });
     }
 
+    var timerNominatim = null;
+    function buscarNominatimAutocomplete(termo) {
+      termo = String(termo || '').trim();
+      var box = document.getElementById('enderecoSugestoes');
+      if (termo.length < 3) return;
+      box.innerHTML = '<div class="address-loading">Buscando endereços...</div>';
+      box.classList.add('ativo');
+      var url = 'https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(termo + ', Brasil') + '&addressdetails=1&limit=5&accept-language=pt-BR';
+      fetch(url)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          if (!data || !data.length) {
+            box.innerHTML = '<div class="empty">Nenhum endereço encontrado</div>';
+            return;
+          }
+          var itens = data.map(function(item) {
+            var addr = item.address || {};
+            return {
+              endereco: addr.road || '',
+              numero_casa: addr.house_number || '',
+              bairro: addr.neighbourhood || addr.suburb || '',
+              cidade: addr.city || addr.town || addr.village || '',
+              uf: addr.state || '',
+              cep: addr.postcode ? addr.postcode.replace('-', '') : '',
+              display: item.display_name || ''
+            };
+          });
+          renderSugestoesEnderecoCliente(itens);
+        })
+        .catch(function() {
+          box.innerHTML = '<div class="empty">Erro na busca</div>';
+        });
+    }
+
     function capturarLocalizacaoCliente(forcarAviso) {
       if (!navigator.geolocation) {
         atualizarAvisoLocalizacao('indisponivel');
@@ -2430,6 +2462,7 @@
         };
         localStorage.removeItem('aqualog_geo_negado');
         atualizarAvisoLocalizacao('ok');
+        preencherEnderecoPorGPS(pos.coords.latitude, pos.coords.longitude);
       }, function(err) {
         clienteGeoAtual = null;
         if (err && err.code === err.PERMISSION_DENIED) {
@@ -2439,6 +2472,74 @@
           atualizarAvisoLocalizacao('pedir');
         }
       }, { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 });
+    }
+
+    async function preencherEnderecoPorGPS(lat, lon) {
+      try {
+        var r = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&addressdetails=1&accept-language=pt-BR');
+        var data = await r.json();
+        if (!data || !data.address) return;
+        var addr = data.address;
+        if (addr.road && !document.getElementById('endereco').value) document.getElementById('endereco').value = addr.road;
+        if (addr.neighbourhood && !document.getElementById('bairro').value) document.getElementById('bairro').value = addr.neighbourhood;
+        else if (addr.suburb && !document.getElementById('bairro').value) document.getElementById('bairro').value = addr.suburb;
+        if (addr.city && !document.getElementById('cidade').value) document.getElementById('cidade').value = addr.city;
+        else if (addr.town && !document.getElementById('cidade').value) document.getElementById('cidade').value = addr.town;
+        else if (addr.village && !document.getElementById('cidade').value) document.getElementById('cidade').value = addr.village;
+        if (addr.state && !document.getElementById('uf').value) document.getElementById('uf').value = addr.state;
+        if (addr.postcode && !document.getElementById('cep').value) document.getElementById('cep').value = addr.postcode.replace('-', '');
+        if (addr.house_number && !document.getElementById('numeroCasa').value) document.getElementById('numeroCasa').value = addr.house_number;
+      } catch (e) {
+        console.warn('Erro ao buscar endereço por GPS:', e);
+      }
+    }
+
+    async function buscarEnderecoPorCep(cep) {
+      cep = String(cep || '').replace(/\D/g, '');
+      if (cep.length !== 8) return;
+      var box = document.getElementById('enderecoSugestoes');
+      box.innerHTML = '<div class="address-loading">Buscando CEP...</div>';
+      box.classList.add('ativo');
+      try {
+        var r = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+        var data = await r.json();
+        if (data.erro) {
+          box.innerHTML = '<div class="empty">CEP não encontrado</div>';
+          return;
+        }
+        document.getElementById('endereco').value = data.logradouro || '';
+        document.getElementById('bairro').value = data.bairro || '';
+        document.getElementById('cidade').value = data.localidade || '';
+        document.getElementById('uf').value = data.uf || '';
+        if (data.complemento) document.getElementById('complemento').value = data.complemento;
+        box.classList.remove('ativo');
+        document.getElementById('numeroCasa').focus();
+      } catch (e) {
+        box.innerHTML = '<div class="empty">Erro ao buscar CEP</div>';
+      }
+    }
+
+    function prepararAutocompleteCep() {
+      var input = document.getElementById('cep');
+      if (!input) return;
+      input.addEventListener('input', function() {
+        var v = this.value.replace(/\D/g, '');
+        if (v.length > 5) v = v.slice(0, 5) + '-' + v.slice(5, 8);
+        this.value = v;
+      });
+      input.addEventListener('blur', function() {
+        var cep = this.value.replace(/\D/g, '');
+        if (cep.length === 8) {
+          buscarEnderecoPorCep(cep);
+        }
+      });
+
+      var ufInput = document.getElementById('uf');
+      if (ufInput) {
+        ufInput.addEventListener('input', function() {
+          this.value = this.value.toUpperCase();
+        });
+      }
     }
 
 async function carregar() {
@@ -2526,6 +2627,17 @@ async function carregar() {
       document.getElementById('consultaTelefone').value = payload.telefone;
       salvarDadosCliente(payload);
       salvarPedidoLocal(data, payload.telefone);
+      if (payload.endereco) {
+        salvarEnderecoPreset({
+          cep: payload.cep,
+          endereco: payload.endereco,
+          numero_casa: payload.numero_casa,
+          complemento: payload.complemento,
+          bairro: payload.bairro,
+          cidade: payload.cidade,
+          uf: payload.uf
+        });
+      }
       ativarSuporte(data.id, payload.telefone);
       if (jaEstavaNaTela) {
         var pixBox = elMsg.querySelector('.pix-box');
@@ -2549,10 +2661,13 @@ async function carregar() {
       var payload = {
         nome: valor('nome'),
         telefone: limparTelefone(valor('telefone')),
-        email: valor('email') || null,
+        cep: valor('cep'),
         endereco: valor('endereco'),
         numero_casa: valor('numeroCasa') || null,
+        complemento: valor('complemento') || null,
         bairro: valor('bairro'),
+        cidade: valor('cidade'),
+        uf: valor('uf'),
         referencia: valor('referencia') || null,
         itens: carrinho.map(function(item) {
           return { produto_id: item.produto_id, quantidade: item.quantidade };
@@ -2636,7 +2751,6 @@ async function carregar() {
       }
       mostrarMsg(el, 'ok', texto);
       el.insertAdjacentHTML('afterbegin', renderResumoPedido(p));
-      el.insertAdjacentHTML('beforeend', renderAvisoRota(p));
       el.insertAdjacentHTML('beforeend', renderCodigoPedido(p));
       if (p.forma_pagamento === 'Pix' && p.pagamento_status !== 'pago') {
         el.insertAdjacentHTML('beforeend', renderPix(p));
@@ -2803,8 +2917,10 @@ async function carregar() {
     }
 
     restaurarDadosCliente();
+    carregarEnderecosPreset();
     renderPedidosSalvos();
     prepararAutocompleteEnderecoCliente();
+    prepararAutocompleteCep();
     capturarLocalizacaoCliente();
     abrirModoCliente('inicio');
     carregar();
