@@ -5,6 +5,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
+def _get_db_name() -> str:
+    """Get and validate DB_NAME from environment."""
+    name = os.getenv('DB_NAME', 'aqualog')
+    if not name:
+        raise RuntimeError(
+            'DB_NAME não definido. Crie um arquivo .env na pasta backend/ '
+            'com DB_NAME=aqualog (ou use DATABASE_URL). '
+            'Veja .env.example como modelo.'
+        )
+    return name
+
+
 _pool = None
 
 
@@ -24,12 +37,12 @@ def get_pool():
             config.update(host=os.getenv('DB_HOST', 'localhost'),
                           user=os.getenv('DB_USER', 'root'),
                           password=os.getenv('DB_PASSWORD', 'senai123'),
-                          database=os.getenv('DB_NAME', 'aqualog'))
+                          database=_get_db_name())
     else:
         config.update(host=os.getenv('DB_HOST', 'localhost'),
                       user=os.getenv('DB_USER', 'root'),
                       password=os.getenv('DB_PASSWORD', 'senai123'),
-                      database=os.getenv('DB_NAME', 'aqualog'))
+                      database=_get_db_name())
     _pool = MySQLConnectionPool(pool_name='aqualog', pool_size=10, **config)
     return _pool
 

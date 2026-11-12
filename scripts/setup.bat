@@ -157,7 +157,11 @@ echo Configurando arquivo .env...
 
 set "AQUALOG_ENV_FILE=%ENV_FILE%"
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:AQUALOG_ENV_FILE; $db=$env:AQUALOG_DB_NAME; if (!(Test-Path -LiteralPath $p)) { $lines=@('# MySQL','DB_HOST=localhost','DB_PORT=3306','DB_USER=root','DB_PASSWORD=','DB_NAME='+$db,'','# Auth','JWT_SECRET=aqualog_jwt_secret_change_in_production','ADMIN_PASSWORD=admin123','','# Pagamento','PIX_CHAVE=','MERCADO_PAGO_ACCESS_TOKEN=','','# Servidor','PORT=8000'); [IO.File]::WriteAllLines($p,$lines,[Text.UTF8Encoding]::new($false)); } else { $lines=[IO.File]::ReadAllLines($p); $found=$false; $out=[Collections.Generic.List[string]]::new(); foreach($line in $lines) { if($line -match '^\s*DB_NAME\s*=') { $out.Add('DB_NAME='+$db); $found=$true } else { $out.Add($line) } }; if(!$found) { $out.Add('DB_NAME='+$db) }; [IO.File]::WriteAllLines($p,$out,[Text.UTF8Encoding]::new($false)) }; Write-Host 'Arquivo .env configurado.'"
+REM Prompt para senha do MySQL (sera salva no .env)
+set "AQUALOG_DB_PASSWORD="
+set /p "AQUALOG_DB_PASSWORD=Digite a senha do MySQL root (Enter se nao houver): "
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$p=$env:AQUALOG_ENV_FILE; $db=$env:AQUALOG_DB_NAME.Trim(); $pw=$env:AQUALOG_DB_PASSWORD; if (!(Test-Path -LiteralPath $p)) { $lines=@('# MySQL','DB_HOST=localhost','DB_PORT=3306','DB_USER=root','DB_PASSWORD='+$pw,'DB_NAME='+$db,'','# Auth','JWT_SECRET=aqualog_jwt_secret_change_in_production','ADMIN_PASSWORD=admin123','','# Pagamento','PIX_CHAVE=','MERCADO_PAGO_ACCESS_TOKEN=','','# Servidor','PORT=8000'); [IO.File]::WriteAllLines($p,$lines,[Text.UTF8Encoding]::new($false)); } else { $lines=[IO.File]::ReadAllLines($p); $foundDb=$false; $foundPw=$false; $out=[Collections.Generic.List[string]]::new(); foreach($line in $lines) { if($line -match '^\s*DB_NAME\s*=') { $out.Add('DB_NAME='+$db); $foundDb=$true } elseif($line -match '^\s*DB_PASSWORD\s*=') { $out.Add('DB_PASSWORD='+$pw); $foundPw=$true } else { $out.Add($line) } }; if(!$foundDb) { $out.Add('DB_NAME='+$db) }; if(!$foundPw) { $out.Add('DB_PASSWORD='+$pw) }; [IO.File]::WriteAllLines($p,$out,[Text.UTF8Encoding]::new($false)) }; Write-Host 'Arquivo .env configurado.'"
 
 if errorlevel 1 goto ERRO_ENV
 
