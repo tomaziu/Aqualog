@@ -27,7 +27,40 @@
   --raio: 0px;
   --raio-md: 0px;
   --transicao: .15s ease;
-}
+
+  /* Spacing scale (4px base) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Border radius scale */
+  --raio-sm: 0px;
+  --raio-md: 4px;
+  --raio-lg: 8px;
+  --raio-full: 999px;
+
+  /* Focus ring */
+  --focus-ring: 2px solid var(--cyan);
+  --focus-offset: 2px;
+
+  /* Typography scale (base 14px, ratio 1.25) */
+  --text-xs: 10px;    /* 0.71rem */
+  --text-sm: 12px;    /* 0.86rem */
+  --text-base: 14px;  /* 1rem */
+  --text-md: 16px;    /* 1.14rem */
+  --text-lg: 18px;    /* 1.29rem */
+  --text-xl: 22px;    /* 1.57rem */
+  --text-2xl: 28px;   /* 2rem */
+  --text-3xl: 36px;   /* 2.57rem */
+  --text-4xl: 44px;   /* 3.14rem */
+
+  /* Button clip-path variants */
+  --btn-clip-sm: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  --btn-clip-md: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  --btn-clip-lg: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
 
 * {
   box-sizing: border-box;
@@ -62,6 +95,17 @@ body::before {
 ::selection {
   background: rgba(0, 229, 255, 0.3);
   color: #fff;
+}
+
+/* Global focus-visible styles - Critical for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Remove default outline only for non-visible focus */
+*:focus:not(:focus-visible) {
+  outline: none;
 }
 
 aside {
@@ -378,6 +422,28 @@ textarea:focus {
   box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.1);
 }
 
+/* Ensure focus styles still work for elements that need custom focus rings */
+.btn:focus-visible,
+.report-btn:focus-visible,
+.pagination button:focus-visible,
+.status-badge:focus-visible,
+.delete:focus-visible,
+.edit:focus-visible,
+.save:focus-visible,
+.secondary-action:focus-visible,
+.danger-soft:focus-visible,
+.confirm-action:focus-visible,
+.eye-btn:focus-visible,
+.img-btn:focus-visible,
+.sidebar-nav button:focus-visible,
+.sidebar-logout:focus-visible,
+.sidebar-nav button.ativo:focus-visible,
+img-btn:focus-visible,
+.pagination button.active:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
 textarea {
   resize: vertical;
   min-height: 80px;
@@ -393,7 +459,7 @@ form button,
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 2px;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  clip-path: var(--btn-clip-md);
   transition: var(--transicao);
 }
 
@@ -417,6 +483,12 @@ table {
   border-radius: 0;
   overflow: hidden;
   border: 1px solid rgba(0, 229, 255, 0.15);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 main table {
@@ -929,7 +1001,7 @@ main table td {
   letter-spacing: 2px;
   cursor: pointer;
   color: var(--navy);
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  clip-path: var(--btn-clip-md);
   transition: var(--transicao);
   min-width: 140px;
 }
@@ -1066,9 +1138,25 @@ main table td {
     padding-top: 64px;
   }
 
+  .table-wrap {
+    overflow-x: auto;
+    width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+
   table {
     display: block;
     overflow-x: auto;
+    width: 100%;
+  }
+
+  /* Disable sticky column on mobile to prevent overflow */
+  main table th:last-child,
+  main table td:last-child {
+    position: static;
+    box-shadow: none;
+    background: transparent;
+    min-width: auto;
   }
 
   th, td {
@@ -2765,6 +2853,39 @@ main table td {
     transform: none;
   }
 }
+
+/* Consolidated shadow utility classes */
+.shadow-sm { box-shadow: var(--sombra); }
+.shadow-md { box-shadow: var(--sombra-media); }
+.shadow-lg { box-shadow: var(--sombra-alta); }
+.shadow-focus { box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.1); }
+
+/* Color utility classes */
+.text-muted { color: var(--muted); }
+.text-cyan { color: var(--cyan); }
+.text-green { color: var(--verde); }
+.text-yellow { color: var(--yellow); }
+.text-red { color: #f87171; }
+.text-muted-contrast { color: #a0a8b8; } /* Better contrast for muted text */
+
+/* Consistent border-radius utilities */
+.rounded-sm { border-radius: var(--raio-sm); }
+.rounded-md { border-radius: var(--raio-md); }
+.rounded-lg { border-radius: var(--raio-lg); }
+.rounded-full { border-radius: var(--raio-full); }
+
+/* Spacing utilities */
+.p-xs { padding: var(--space-xs); }
+.p-sm { padding: var(--space-sm); }
+.p-md { padding: var(--space-md); }
+.p-lg { padding: var(--space-lg); }
+.p-xl { padding: var(--space-xl); }
+.p-2xl { padding: var(--space-2xl); }
+
+/* Button clip-path utilities */
+.btn-clip-sm { clip-path: var(--btn-clip-sm); }
+.btn-clip-md { clip-path: var(--btn-clip-md); }
+.btn-clip-lg { clip-path: var(--btn-clip-lg); }
 
 /* GPS Admin */
 .gps-icon-entregador {

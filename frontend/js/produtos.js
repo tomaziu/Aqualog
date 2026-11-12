@@ -121,6 +121,7 @@ function abrirImageModal(produtoId) {
 
   modal.classList.add('ativo');
   modal.setAttribute('aria-hidden', 'false');
+  ativarModalFocusTrap('imageModal');
 }
 
 function fecharImageModal() {
@@ -130,6 +131,7 @@ function fecharImageModal() {
   cancelarCrop();
   imageModalProdutoId = null;
   $('imageFileInput').value = '';
+  desativarModalFocusTrap();
 }
 
 function handleImageSelect(event) {

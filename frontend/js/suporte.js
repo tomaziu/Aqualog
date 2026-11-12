@@ -194,6 +194,7 @@ function confirmarApagarSuporte(pedidoId) {
     });
     document.body.appendChild(modal);
     modal.querySelector('.support-confirm-cancel').focus();
+    ativarModalFocusTrap('supportConfirmModal');
   });
 }
 

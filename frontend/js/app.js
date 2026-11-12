@@ -8,6 +8,7 @@ function mostrarConfirm(titulo, mensagem, cb) {
   _confirmCb = cb;
   $('confirmModal').style.zIndex = '10003';
   $('confirmModal').classList.add('ativo');
+  ativarModalFocusTrap('confirmModal');
   return new Promise(function(resolve) { _confirmResolve = resolve; });
 }
 
@@ -16,6 +17,7 @@ function fecharConfirm() {
   $('confirmModal').style.zIndex = '';
   _confirmCb = null;
   if (_confirmResolve) { _confirmResolve(); _confirmResolve = null; }
+  desativarModalFocusTrap();
 }
 
 async function executarConfirm() {
@@ -31,19 +33,63 @@ function mostrarPrompt(titulo, mensagem, valorPadrao, cb) {
   _promptCb = cb;
   $('promptModal').style.zIndex = '10003';
   $('promptModal').classList.add('ativo');
-  $('promptInput').focus();
+  ativarModalFocusTrap('promptModal');
 }
 
 function fecharPrompt() {
   $('promptModal').classList.remove('ativo');
   $('promptModal').style.zIndex = '';
   _promptCb = null;
+  desativarModalFocusTrap();
 }
 
 function executarPrompt() {
   var valor = $('promptInput').value;
   if (_promptCb) _promptCb(valor);
   fecharPrompt();
+}
+
+/* Modal focus trap utility */
+var _modalFocusTrap = null;
+
+function ativarModalFocusTrap(modalId) {
+  var modal = $(modalId);
+  if (!modal) return;
+
+  var focusableElements = modal.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  var firstFocusable = focusableElements[0];
+  var lastFocusable = focusableElements[focusableElements.length - 1];
+
+  function handleTab(e) {
+    if (e.key !== 'Tab') return;
+
+    if (e.shiftKey) {
+      if (document.activeElement === firstFocusable) {
+        e.preventDefault();
+        lastFocusable.focus();
+      }
+    } else {
+      if (document.activeElement === lastFocusable) {
+        e.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+  }
+
+  modal.addEventListener('keydown', handleTab);
+  _modalFocusTrap = { modal: modal, handler: handleTab, first: firstFocusable, last: lastFocusable };
+
+  // Focus first element
+  if (firstFocusable) firstFocusable.focus();
+}
+
+function desativarModalFocusTrap() {
+  if (_modalFocusTrap) {
+    _modalFocusTrap.modal.removeEventListener('keydown', _modalFocusTrap.handler);
+    _modalFocusTrap = null;
+  }
 }
 
 function salvarFiltro(id) {

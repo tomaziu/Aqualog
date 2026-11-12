@@ -291,6 +291,7 @@ async function abrirComprovantesPedido(id) {
   conteudo.innerHTML = '<div class="empty-list">Carregando comprovantes...</div>';
   modal.classList.add('ativo');
   modal.setAttribute('aria-hidden', 'false');
+  ativarModalFocusTrap('historicoModal');
 
   var comprovantes = await apiGet('/pedidos/' + id + '/comprovantes');
   if (!Array.isArray(comprovantes) || !comprovantes.length) {
