@@ -6,7 +6,7 @@ echo   AquaLog - Instalador Automatico
 echo ========================================
 echo.
 
-:: Vai para a raiz do projeto (pasta onde o scripts/ esta)
+:: Vai para a raiz do projeto
 cd /d "%~dp0.."
 
 set "BACKEND_DIR=%CD%\backend"
@@ -160,18 +160,18 @@ if not exist "%ENV_FILE%" (
 echo.
 
 :: --- Verificar se o banco ja tem tabelas criadas ---
-echo  Verificando se o banco '%BANCO_NOME%' ja esta configurado...
+echo  Verificando se o banco %BANCO_NOME% ja esta configurado...
 "%MYSQL_EXE%" -u root -e "USE %BANCO_NOME%; SHOW TABLES LIKE 'pedidos';" >nul 2>nul
 if not errorlevel 1 (
-    echo  OK  Banco '%BANCO_NOME%' ja existe com tabelas criadas. Pulando aplicacao do schema.
+    echo  OK  Banco %BANCO_NOME% ja existe com tabelas criadas. Pulando aplicacao do schema.
     goto FINAL
 ) else (
     echo    Banco vazio ou nao existe. Criando banco e aplicando schema.sql...
 
     :: Tentativa 1: root sem senha - criar banco
-    "%MYSQL_EXE%" -u root -e "CREATE DATABASE IF NOT EXISTS `%BANCO_NOME%` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" >nul 2>nul
+    "%MYSQL_EXE%" -u root -e "CREATE DATABASE IF NOT EXISTS %BANCO_NOME% CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" >nul 2>nul
     if not errorlevel 1 (
-        echo  OK  Banco '%BANCO_NOME%' criado (root sem senha).
+        echo  OK  Banco %BANCO_NOME% criado (root sem senha).
     ) else (
         echo    Nao conseguiu (sem senha).
         echo.
@@ -185,9 +185,9 @@ if not errorlevel 1 (
             echo       mysql> source backend\schema.sql
             goto FINAL
         ) else (
-            "%MYSQL_EXE%" -u root -p%MYSQL_PASS% -e "CREATE DATABASE IF NOT EXISTS `%BANCO_NOME%` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" >nul 2>nul
+            "%MYSQL_EXE%" -u root -p%MYSQL_PASS% -e "CREATE DATABASE IF NOT EXISTS %BANCO_NOME% CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" >nul 2>nul
             if not errorlevel 1 (
-                echo  OK  Banco '%BANCO_NOME%' criado com sucesso.
+                echo  OK  Banco %BANCO_NOME% criado com sucesso.
             ) else (
                 echo  !  Falha ao criar banco. Verifique a senha e se o MySQL esta rodando.
                 goto FINAL
