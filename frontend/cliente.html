@@ -1391,7 +1391,6 @@
         <span id="brandSubtitle">Pedido online da distribuidora</span>
       </div>
     </div>
-    <a href="rastreamento.html" class="status-link"><i class="ph ph-map-trifold"></i> Rastrear entrega</a>
   </header>
 
   <main class="layout">
@@ -1405,13 +1404,6 @@
       <div id="avisoCliente" class="client-notice"></div>
       <div id="avisoLojaFechada" class="client-notice" style="border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.06); color: #fca5a5;">
         A loja está fechada no momento. Você pode navegar os produtos mas não será possível finalizar pedidos.
-      </div>
-      <div id="geoPermissionNotice" class="geo-permission-notice">
-        <div>
-          <strong>Permita sua localização</strong>
-          <span>Isso ajuda a entrega e o rastreamento ficarem mais precisos. O pedido continua usando o endereço informado.</span>
-        </div>
-        <button type="button" onclick="capturarLocalizacaoCliente(true)">Permitir</button>
       </div>
       <div id="clienteHome" class="client-home">
         <div class="client-action-grid">
@@ -1431,7 +1423,7 @@
             <span>Fale com a distribuidora sobre um pedido.</span>
           </button>
         </div>
-        <div class="client-quick-status">Acompanhe tudo pelo número do pedido e telefone. Para rastreamento mais preciso, permita sua localização.</div>
+        <div class="client-quick-status">Acompanhe tudo pelo número do pedido e telefone.</div>
       </div>
       <div id="productArea" class="product-area hidden">
         <div class="product-area-head">
@@ -1799,11 +1791,8 @@
       }
       box.innerHTML = pedidos.map(function(p) {
         var codigoResumo = p.codigo_entrega ? p.codigo_entrega : 'bloqueado';
-        var trackLink = p.status === 'saiu_para_entrega'
-          ? '<a href="rastreamento.html?entrega=' + encodeURIComponent(p.id) + '&telefone=' + encodeURIComponent(p.telefone) + '" target="_blank" onclick="event.stopPropagation()" style="color:#00e5ff;font-weight:700;text-decoration:none;margin-left:6px">Rastrear</a>'
-          : '';
         return '<button class="saved-order" type="button" data-id="' + p.id + '" data-telefone="' + escapeHtml(p.telefone) + '" onclick="abrirPedidoSalvo(Number(this.dataset.id), this.dataset.telefone)">' +
-          '<strong>Pedido #' + p.id + ' - ' + dinheiro(p.total) + trackLink + '</strong>' +
+          '<strong>Pedido #' + p.id + ' - ' + dinheiro(p.total) + '</strong>' +
           '<span>' + escapeHtml(p.produto || 'Pedido') + ' | ' + formatarDataHora(p.criado_em) + ' | ' + escapeHtml(confirmacaoTexto(p.confirmacao_status)) + ' | Código: ' + escapeHtml(codigoResumo) + '</span>' +
         '</button>';
       }).join('');
@@ -2020,11 +2009,9 @@
 
     function renderAvisoRota(pedido) {
       if (!pedido || pedido.status !== 'saiu_para_entrega') return '';
-      var trackUrl = 'rastreamento.html?entrega=' + encodeURIComponent(pedido.id) + '&telefone=' + encodeURIComponent(pedido.telefone || '');
       return '<div class="route-alert">' +
         '<div class="route-icon">&#10146;</div>' +
         '<div><strong>Entregador a caminho</strong><span>Seu pedido já saiu e está indo para o endereço informado.</span>' +
-        '<a href="' + trackUrl + '" target="_blank">Rastrear no mapa</a>' +
         '</div></div>';
     }
 
@@ -2321,34 +2308,7 @@
       }
     }
 
-    function capturarLocalizacaoCliente(forcarAviso) {
-      if (!navigator.geolocation) {
-        atualizarAvisoLocalizacao('indisponivel');
-        return;
-      }
-      var geoNegado = localStorage.getItem('aqualog_geo_negado');
-      if (geoNegado && !forcarAviso) {
-        atualizarAvisoLocalizacao('negado');
-        return;
-      }
-      if (forcarAviso) atualizarAvisoLocalizacao('pedir');
-      navigator.geolocation.getCurrentPosition(function(pos) {
-        clienteGeoAtual = {
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude
-        };
-        localStorage.removeItem('aqualog_geo_negado');
-        atualizarAvisoLocalizacao('ok');
-      }, function(err) {
-        clienteGeoAtual = null;
-        if (err && err.code === err.PERMISSION_DENIED) {
-          localStorage.setItem('aqualog_geo_negado', '1');
-          atualizarAvisoLocalizacao('negado');
-        } else {
-          atualizarAvisoLocalizacao('pedir');
-        }
-      }, { enableHighAccuracy: true, maximumAge: 60000, timeout: 10000 });
-    }
+    
 
     function aplicarSugestaoEnderecoCliente(s) {
       document.getElementById('endereco').value = s.endereco || '';
@@ -2809,7 +2769,6 @@
     restaurarDadosCliente();
     renderPedidosSalvos();
     prepararAutocompleteEnderecoCliente();
-    capturarLocalizacaoCliente();
     abrirModoCliente('inicio');
     carregar();
   </script>

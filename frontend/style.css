@@ -551,7 +551,7 @@ main table th:last-child {
 }
 
 main table td:last-child {
-  min-width: 132px;
+  min-width: 170px;
 }
 
 main table td {
