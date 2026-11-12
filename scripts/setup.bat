@@ -200,22 +200,16 @@ if not errorlevel 1 (
     echo  Aplicando schema.sql...
 
     :: Faz replace do nome do banco no schema.sql (aqualog -> nome escolhido)
-    :: Usando arquivo .bat temporario para evitar problemas com delayed expansion
-    findstr /v /c:"^$" "%SCHEMA_SQL%" > "%TEMP%\aqualog_schema_temp.sql"
+    :: Usando powershell para fazer o replace de forma segura
+    powershell -NoProfile -Command "Get-Content '%SCHEMA_SQL%' | ForEach-Object { $_ -replace 'aqualog', '%BANCO_NOME%' } | Set-Content '%TEMP%\aqualog_schema_final.sql'"
     
-    set "SCHEMA_BAT=%TEMP%\aqualog_apply_%%RANDOM%%.bat"
-    echo @echo off > "%SCHEMA_BAT%"
-    echo "%MYSQL_EXE%" -u root < "%TEMP%\aqualog_schema_temp.sql" >> "%SCHEMA_BAT%"
-    
-    :: Executar o schema
-    call "%SCHEMA_BAT%" >nul 2>nul
+    :: Tentativa sem senha
+    "%MYSQL_EXE%" -u root < "%TEMP%\aqualog_schema_final.sql" >nul 2>nul
     if not errorlevel 1 (
         echo  OK  Tabelas criadas com sucesso.
     ) else (
-        :: Tentativa com senha se tiver sido informada
         if not "%MYSQL_PASS%"=="" (
-            echo "%MYSQL_EXE%" -u root -p%MYSQL_PASS% < "%TEMP%\aqualog_schema_temp.sql" >> "%SCHEMA_BAT%"
-            call "%SCHEMA_BAT%" >nul 2>nul
+            "%MYSQL_EXE%" -u root -p%MYSQL_PASS% < "%TEMP%\aqualog_schema_final.sql" >nul 2>nul
             if not errorlevel 1 (
                 echo  OK  Tabelas criadas com sucesso.
             ) else (
@@ -226,8 +220,7 @@ if not errorlevel 1 (
         )
     )
 
-    del "%TEMP%\aqualog_schema_temp.sql" 2>nul
-    del "%SCHEMA_BAT%" 2>nul
+    del "%TEMP%\aqualog_schema_final.sql" 2>nul
 )
 
 :FINAL
