@@ -97,7 +97,7 @@ if errorlevel 1 (
     if not defined MYSQL_EXE (
         echo  X MySQL nao encontrado!
         echo    O AquaLog precisa do MySQL para funcionar.
-        echo    1. Baixe e instale: https://dev.mysql.com/downloads/mysql/
+        echo    1. Baixe e instale: https://www.mysql.com/downloads/
         echo    2. Durante a instalacao, anote a senha do usuario 'root'.
         echo    3. Adicione o MySQL ao PATH do Windows ou instale na pasta padrao.
         echo    4. Depois rode este script novamente.
@@ -125,7 +125,7 @@ if "%BANCO_NOME%"=="" set "BANCO_NOME=%BANCO_PADRAO%"
 echo  Usando banco: %BANCO_NOME%
 echo.
 
-:: --- Criar .env com valores padrao ---
+:: --- Criar ou atualizar .env ---
 if not exist "%ENV_FILE%" (
     echo # MySQL > "%ENV_FILE%"
     echo DB_HOST=localhost >> "%ENV_FILE%"
@@ -146,15 +146,16 @@ if not exist "%ENV_FILE%" (
     echo PORT=8000 >> "%ENV_FILE%"
     echo  OK  backend\.env criado com valores padrao.
 ) else (
-    :: Atualiza apenas o DB_NAME se ja existir
+    :: Atualiza apenas o DB_NAME se ja existir, preservando o restante
+    set "ENV_TEMP=%TEMP%\aqualog_env_%%RANDOM%%.tmp"
     for /f "usebackq tokens=1* delims==" %%a in ("%ENV_FILE%") do (
         if "%%a"=="DB_NAME" (
-            echo DB_NAME=%BANCO_NOME% >> "%ENV_FILE%.tmp"
+            echo DB_NAME=%BANCO_NOME% >> "%ENV_TEMP%"
         ) else (
-            echo %%a=%%b >> "%ENV_FILE%.tmp"
+            echo %%a=%%b >> "%ENV_TEMP%"
         )
     )
-    move /y "%ENV_FILE%.tmp" "%ENV_FILE%" >nul
+    move /y "%ENV_TEMP%" "%ENV_FILE%" >nul
     echo  OK  backend\.env ja existe (atualizado DB_NAME=%BANCO_NOME%).
 )
 echo.
@@ -199,23 +200,22 @@ if not errorlevel 1 (
     echo  Aplicando schema.sql...
 
     :: Faz replace do nome do banco no schema.sql (aqualog -> nome escolhido)
+    :: Usando arquivo .bat temporario para evitar problemas com delayed expansion
     findstr /v /c:"^$" "%SCHEMA_SQL%" > "%TEMP%\aqualog_schema_temp.sql"
-
-    setlocal EnableDelayedExpansion
-    (for /f "usebackq delims=" %%a in ("%TEMP%\aqualog_schema_temp.sql") do (
-        set "linha=%%a"
-        set "linha=!linha:aqualog=%BANCO_NOME%!"
-        echo !linha!
-    )) > "%TEMP%\aqualog_schema_final.sql"
-    endlocal
-
-    :: Tentativa sem senha
-    "%MYSQL_EXE%" -u root < "%TEMP%\aqualog_schema_final.sql" >nul 2>nul
+    
+    set "SCHEMA_BAT=%TEMP%\aqualog_apply_%%RANDOM%%.bat"
+    echo @echo off > "%SCHEMA_BAT%"
+    echo "%MYSQL_EXE%" -u root < "%TEMP%\aqualog_schema_temp.sql" >> "%SCHEMA_BAT%"
+    
+    :: Executar o schema
+    call "%SCHEMA_BAT%" >nul 2>nul
     if not errorlevel 1 (
         echo  OK  Tabelas criadas com sucesso.
     ) else (
+        :: Tentativa com senha se tiver sido informada
         if not "%MYSQL_PASS%"=="" (
-            "%MYSQL_EXE%" -u root -p%MYSQL_PASS% < "%TEMP%\aqualog_schema_final.sql" >nul 2>nul
+            echo "%MYSQL_EXE%" -u root -p%MYSQL_PASS% < "%TEMP%\aqualog_schema_temp.sql" >> "%SCHEMA_BAT%"
+            call "%SCHEMA_BAT%" >nul 2>nul
             if not errorlevel 1 (
                 echo  OK  Tabelas criadas com sucesso.
             ) else (
@@ -227,7 +227,7 @@ if not errorlevel 1 (
     )
 
     del "%TEMP%\aqualog_schema_temp.sql" 2>nul
-    del "%TEMP%\aqualog_schema_final.sql" 2>nul
+    del "%SCHEMA_BAT%" 2>nul
 )
 
 :FINAL

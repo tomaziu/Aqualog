@@ -3,7 +3,6 @@
 # Execute com: .\scripts\setup.ps1  (ou PowerShell -ExecutionPolicy Bypass -File scripts\setup.ps1)
 
 $ErrorActionPreference = "Continue"
-$dq = '"'
 $SCRIPT_DIR = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $PROJECT_ROOT = Resolve-Path (Join-Path $SCRIPT_DIR "..")
 Set-Location -LiteralPath $PROJECT_ROOT
@@ -99,7 +98,7 @@ if (-not $mysqlExecutable) {
 if (-not $mysqlExecutable) {
     Write-Host "  X MySQL nao encontrado!" -ForegroundColor Red
     Write-Host "    O AquaLog precisa do MySQL para funcionar." -ForegroundColor Red
-    Write-Host "    1. Baixe e instale: https://dev.mysql.com/downloads/mysql/" -ForegroundColor Red
+    Write-Host "    1. Baixe e instale: https://www.mysql.com/downloads/" -ForegroundColor Red
     Write-Host "    2. Durante a instalacao, anote a senha do usuario root." -ForegroundColor Red
     Write-Host "    3. Adicione o MySQL ao PATH do Windows ou instale na pasta padrao." -ForegroundColor Red
     Write-Host "    4. Depois rode este script novamente." -ForegroundColor Red
@@ -148,8 +147,22 @@ if (-not (Test-Path -LiteralPath $ENV_FILE)) {
     Set-Content -LiteralPath $ENV_FILE -Value $defaultEnv -Encoding UTF8
     Write-Host "  OK  backend.env criado com valores padrao." -ForegroundColor Green
 } else {
+    :: Atualiza apenas o DB_NAME se ja existir, preservando o restante
     $conteudoEnv = Get-Content -LiteralPath $ENV_FILE -Raw
-    $conteudoEnv = $conteudoEnv -replace '(?<=^DB_NAME=).*$', $bancoNome
+    $linhas = @()
+    $encontrouDB_NAME = $false
+    foreach ($linha in $conteudoEnv -split "`n") {
+        if ($linha -match '^DB_NAME=') {
+            $linhas += "DB_NAME=$bancoNome"
+            $encontrouDB_NAME = $true
+        } else {
+            $linhas += $linha
+        }
+    }
+    if (-not $encontrouDB_NAME) {
+        $linhas += "DB_NAME=$bancoNome"
+    }
+    $conteudoEnv = $linhas -join "`n"
     Set-Content -LiteralPath $ENV_FILE -Value $conteudoEnv -Encoding UTF8
     Write-Host "  OK  backend.env ja existe (atualizado DB_NAME=$bancoNome)." -ForegroundColor Green
 }
@@ -160,9 +173,9 @@ function Executar-MySqlQuery {
     param([string]$Query, [securestring]$Senha = $null)
     if ($Senha) {
         $senhaTexto = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto([System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($Senha))
-        $cmdLine = $dq + $mysqlExecutable + $dq + " -u root -p$senhaTexto -e " + $dq + $Query + $dq
+        $cmdLine = """$mysqlExecutable"" -u root -p$senhaTexto -e ""$Query"""
     } else {
-        $cmdLine = $dq + $mysqlExecutable + $dq + " -u root -e " + $dq + $Query + $dq
+        $cmdLine = """$mysqlExecutable"" -u root -e ""$Query"""
     }
     & cmd /c $cmdLine 2>$null
     return $LASTEXITCODE
@@ -173,7 +186,7 @@ Write-Host "  Verificando se o banco '$bancoNome' ja esta configurado..." -Foreg
 
 $tabelasExistem = $false
 $queryTeste = "USE $bancoNome; SHOW TABLES LIKE 'pedidos';"
-$cmdLineTeste = $dq + $mysqlExecutable + $dq + " -u root -e " + $dq + $queryTeste + $dq
+$cmdLineTeste = """$mysqlExecutable"" -u root -e ""$queryTeste"""
 $testeTabelas = & cmd /c $cmdLineTeste 2>$null
 if ($LASTEXITCODE -eq 0 -and $testeTabelas -match 'pedidos') {
     $tabelasExistem = $true
@@ -238,7 +251,7 @@ if ($tabelasExistem) {
 
         # Criar arquivo bat temporario para aplicar schema com redirecionamento
         $batTemp = Join-Path $env:TEMP "aqualog_apply_$bancoNome.bat"
-        $batContent = $dq + $mysqlExecutable + $dq + " -u root < " + $dq + $schemaTemp + $dq
+        $batContent = """$mysqlExecutable"" -u root < ""$schemaTemp""""
         Set-Content -LiteralPath $batTemp -Value $batContent -Encoding UTF8
         & cmd /c $batTemp 2>$null
         $code = $LASTEXITCODE
@@ -247,7 +260,7 @@ if ($tabelasExistem) {
             Write-Host "  OK  Tabelas criadas com sucesso." -ForegroundColor Green
         } else {
             if (-not [string]::IsNullOrWhiteSpace($mysqlPass)) {
-                $batContent2 = $dq + $mysqlExecutable + $dq + " -u root -p$mysqlPass < " + $dq + $schemaTemp + $dq
+                $batContent2 = """$mysqlExecutable"" -u root -p$mysqlPass < ""$schemaTemp""""
                 Set-Content -LiteralPath $batTemp -Value $batContent2 -Encoding UTF8
                 & cmd /c $batTemp 2>$null
                 $code = $LASTEXITCODE
