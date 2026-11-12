@@ -147,7 +147,7 @@ if (-not (Test-Path -LiteralPath $ENV_FILE)) {
     Set-Content -LiteralPath $ENV_FILE -Value $defaultEnv -Encoding UTF8
     Write-Host "  OK  backend.env criado com valores padrao." -ForegroundColor Green
 } else {
-    :: Atualiza apenas o DB_NAME se ja existir, preservando o restante
+    # Atualiza apenas o DB_NAME se ja existir, preservando o restante
     $conteudoEnv = Get-Content -LiteralPath $ENV_FILE -Raw
     $linhas = @()
     $encontrouDB_NAME = $false
@@ -251,7 +251,7 @@ if ($tabelasExistem) {
 
         # Criar arquivo bat temporario para aplicar schema com redirecionamento
         $batTemp = Join-Path $env:TEMP "aqualog_apply_$bancoNome.bat"
-        $batContent = """$mysqlExecutable"" -u root < ""$schemaTemp""""
+        $batContent = """$mysqlExecutable"" -u root < ""$schemaTemp"""
         Set-Content -LiteralPath $batTemp -Value $batContent -Encoding UTF8
         & cmd /c $batTemp 2>$null
         $code = $LASTEXITCODE
@@ -260,7 +260,7 @@ if ($tabelasExistem) {
             Write-Host "  OK  Tabelas criadas com sucesso." -ForegroundColor Green
         } else {
             if (-not [string]::IsNullOrWhiteSpace($mysqlPass)) {
-                $batContent2 = """$mysqlExecutable"" -u root -p$mysqlPass < ""$schemaTemp""""
+                $batContent2 = """$mysqlExecutable"" -u root -p$mysqlPass < ""$schemaTemp"""
                 Set-Content -LiteralPath $batTemp -Value $batContent2 -Encoding UTF8
                 & cmd /c $batTemp 2>$null
                 $code = $LASTEXITCODE
