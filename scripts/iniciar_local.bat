@@ -1,5 +1,5 @@
 @echo off
-cd /d "%~dp0backend"
+cd /d "%~dp0..\backend"
 
 echo Iniciando processos no Prompt de Comando padrao...
 
