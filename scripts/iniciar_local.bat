@@ -6,22 +6,58 @@ echo   Iniciando AquaLog - Servidor Local
 echo ========================================
 echo.
 
-:: Encontra o diretorio do backend procurando a pasta venv
-set "BACKEND_DIR="
-if exist "..\backend\venv" set "BACKEND_DIR=..\backend"
-if exist "backend\venv" set "BACKEND_DIR=backend"
-if exist "%~dp0..\backend\venv" set "BACKEND_DIR=%~dp0..\backend"
+:: Obtem o diretorio deste script de forma confiavel
+set "SCRIPT_DIR=%~dp0"
+:: Remove a barra final se houver
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
 
-:: Normaliza o caminho
-for %%I in ("%BACKEND_DIR%") do set "BACKEND_DIR=%%~fI"
+:: Sobe um nivel para a raiz do projeto, depois entra em backend
+:: SCRIPT_DIR = ...\aqualog_projeto\scripts
+:: PROJECT_ROOT = ...\aqualog_projeto
+:: BACKEND_DIR = ...\aqualog_projeto\backend
+for %%I in ("%SCRIPT_DIR%\..") do set "PROJECT_ROOT=%%~fI"
+set "BACKEND_DIR=%PROJECT_ROOT%\backend"
+
+echo Procurando backend em: %BACKEND_DIR%
+if not exist "%BACKEND_DIR%\venv\Scripts\python.exe" (
+    echo.
+    echo ERRO: Nao encontrou o backend em "%BACKEND_DIR%"
+    echo.
+    echo Verificando caminhos alternativos...
+    
+    :: Tenta caminhos alternativos
+    if exist "..\backend\venv\Scripts\python.exe" (
+        set "BACKEND_DIR=..\backend"
+        for %%I in ("%BACKEND_DIR%") do set "BACKEND_DIR=%%~fI"
+        echo Encontrou backend em caminho relativo: %BACKEND_DIR%
+    ) else if exist "backend\venv\Scripts\python.exe" (
+        set "BACKEND_DIR=backend"
+        for %%I in ("%BACKEND_DIR%") do set "BACKEND_DIR=%%~fI"
+        echo Encontrou backend em: %BACKEND_DIR%
+    ) else (
+        echo.
+        echo ERRO: Nao foi possível localizar a pasta backend\venv
+        echo.
+        echo Dica: Execute este arquivo a partir da pasta do projeto ou certifique-se
+        echo de que a estrutura de pastas esta correta:
+        echo   aqualog_projeto/
+        echo   ├── backend/
+        echo   │   └── venv/
+        echo   └── scripts/
+        echo       └── iniciar_local.bat
+        echo.
+        pause
+        exit /b 1
+    )
+)
 
 echo BACKEND_DIR: %BACKEND_DIR%
 if not exist "%BACKEND_DIR%\venv\Scripts\python.exe" (
-    echo ERRO: Backend nao encontrado em %BACKEND_DIR%
+    echo ERRO: Python do venv nao encontrado em %BACKEND_DIR%\venv\Scripts\python.exe
     pause
     exit /b 1
 )
-echo BACKEND_DIR: %BACKEND_DIR%
+echo BACKEND_DIR OK: %BACKEND_DIR%
 echo.
 
 :: Aplica migrações
