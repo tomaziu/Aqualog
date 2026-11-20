@@ -25,19 +25,25 @@ function filtrarEntregadores() {
       '<td class="editavel" contenteditable="true" data-linha="entregador-' + e.id + '" data-campo="telefone">' + escapeHtml(formatarTelefoneDisplay(e.telefone)) + '</td>' +
       '<td class="editavel" contenteditable="true" data-linha="entregador-' + e.id + '" data-campo="veiculo">' + escapeHtml(e.veiculo) + '</td>' +
       '<td class="codigo-cell" data-linha="entregador-' + e.id + '" data-campo="codigo_acesso">' +
-        '<div style="font-size: 11px; color: #999; margin-bottom: 2px;">Cód: ********</div>' +
-        '<input class="codigo-input" type="text" style="width: 80px; font-size: 12px;" placeholder="Novo">' +
+        '<div class="codigo-control">' +
+          '<span class="codigo-mascarado">Cód: ********</span>' +
+          '<input class="codigo-input" type="text" placeholder="Novo">' +
+        '</div>' +
       '</td>' +
       '<td>' +
-        '<select class="select-inline" data-linha="entregador-' + e.id + '" data-campo="status">' +
-          '<option value="disponivel"' + (e.status === 'disponivel' ? ' selected' : '') + '>Disponivel</option>' +
-          '<option value="ocupado"' + (e.status === 'ocupado' ? ' selected' : '') + '>Ocupado</option>' +
-        '</select>' +
-        (e.status === 'ocupado' ? '<span class="badge" style="background:rgba(239,68,68,0.12);color:#f87171;margin-left:6px;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600">ocupado</span>' : '<span class="badge" style="background:rgba(16,185,129,0.12);color:#34d399;margin-left:6px;font-size:11px;padding:2px 8px;border-radius:6px;font-weight:600">disponivel</span>') +
+        '<div class="status-control">' +
+          '<select class="select-inline" data-linha="entregador-' + e.id + '" data-campo="status">' +
+            '<option value="disponivel"' + (e.status === 'disponivel' ? ' selected' : '') + '>Disponivel</option>' +
+            '<option value="ocupado"' + (e.status === 'ocupado' ? ' selected' : '') + '>Ocupado</option>' +
+          '</select>' +
+          (e.status === 'ocupado' ? '<span class="badge status-badge-ocupado">ocupado</span>' : '<span class="badge status-badge-disponivel">disponivel</span>') +
+        '</div>' +
       '</td>' +
-      '<td class="acoes">' +
-        '<button class="save" onclick="salvarEntregador(' + e.id + ')">Salvar</button>' +
-        '<button class="delete" onclick="excluirEntregador(' + e.id + ')">Excluir</button>' +
+      '<td>' +
+        '<div class="acoes">' +
+          '<button class="save" onclick="salvarEntregador(' + e.id + ')">Salvar</button>' +
+          '<button class="delete" onclick="excluirEntregador(' + e.id + ')">Excluir</button>' +
+        '</div>' +
       '</td></tr>';
   }).join('') + renderPaginacao('entregadores');
   atualizarResumoSelecaoMassa('entregadores');

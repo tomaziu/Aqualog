@@ -1,0 +1,72 @@
+:root {
+  --navy: #0a0e2e;
+  --blue: #1a237e;
+  --cyan: #00e5ff;
+  --yellow: #ffd600;
+  --silver: #c8d0e0;
+  --light: #e8ecf8;
+  --mid: #8892b0;
+  --box-bg: #111a3e;
+  --stripe: #0d1435;
+  --azul: #00e5ff;
+  --azul-claro: rgba(0, 229, 255, 0.1);
+  --azul-escuro: #00b8d4;
+  --verde: #10b981;
+  --verde-claro: rgba(16, 185, 129, 0.12);
+  --azul-sidebar: #0d1435;
+  --azul-sidebar-hover: #162052;
+  --branco: #111a3e;
+  --texto: #e8ecf8;
+  --texto-secundario: #8892b0;
+  --muted: #8892b0;
+  --borda: rgba(0, 229, 255, 0.15);
+  --fundo: #0a0e2e;
+  --sombra: 0 2px 8px rgba(0,0,0,.3);
+  --sombra-media: 0 8px 24px rgba(0,0,0,.4);
+  --sombra-alta: 0 16px 48px rgba(0,0,0,.5);
+  --raio: 0px;
+  --raio-md: 0px;
+  --transicao: .15s ease;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  --raio-sm: 0px;
+  --raio-md: 4px;
+  --raio-lg: 8px;
+  --raio-full: 999px;
+
+  --focus-ring: 2px solid var(--cyan);
+  --focus-offset: 2px;
+
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+  --text-3xl: 36px;
+  --text-4xl: 44px;
+
+  --btn-clip-sm: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  --btn-clip-md: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  --btn-clip-lg: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+
+  --aqua-navy: #002858;
+  --aqua-blue: #0098E8;
+  --aqua-cyan: #00A8F8;
+  --aqua-gold: #F8A000;
+  --aqua-white: #FFFFFF;
+  --aqua-background: #F4F7FA;
+  --aqua-text: #172B42;
+  --aqua-border: #DCE5ED;
+  --font-brand: 'Montserrat', sans-serif;
+  --font-interface: 'Inter', sans-serif;
+  --radius-card: 12px;
+  --radius-button: 8px;
+}
