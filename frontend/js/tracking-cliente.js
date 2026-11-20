@@ -31,17 +31,21 @@ function clienteDistancia(metros) {
 
 async function buscarEntregaCliente(id, telefone) {
   $('clienteTrackingErro').textContent = '';
-  var r = await fetch(window.location.origin + '/api/v1/site/deliveries/' + encodeURIComponent(id) + '?telefone=' + encodeURIComponent(telefone), { cache: 'no-cache' });
-  var json = await r.json().catch(function() { return {}; });
-  if (!r.ok) {
-    $('clienteTrackingErro').textContent = json.detail || 'Não foi possível abrir essa entrega.';
-    return;
+  try {
+    var r = await fetch(window.location.origin + '/api/v1/site/deliveries/' + encodeURIComponent(id) + '?telefone=' + encodeURIComponent(telefone), { cache: 'no-cache' });
+    var json = await r.json().catch(function() { return {}; });
+    if (!r.ok) {
+      $('clienteTrackingErro').textContent = json.detail || 'Não foi possível abrir essa entrega.';
+      return;
+    }
+    clienteEntregaAtual = json.data;
+    clienteEntregaAtual._telefone = telefone;
+    renderClienteEntrega(clienteEntregaAtual);
+    conectarClienteWs(id, telefone);
+    iniciarClienteGps(id, telefone);
+  } catch (error) {
+    $('clienteTrackingErro').textContent = 'Erro de conexão. Verifique sua internet e tente novamente.';
   }
-  clienteEntregaAtual = json.data;
-  clienteEntregaAtual._telefone = telefone;
-  renderClienteEntrega(clienteEntregaAtual);
-  conectarClienteWs(id, telefone);
-  iniciarClienteGps(id, telefone);
 }
 
 function renderClienteEntrega(e) {

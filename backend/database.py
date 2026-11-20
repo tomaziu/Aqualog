@@ -43,14 +43,14 @@ def get_pool():
             config.update(
                 host=os.getenv('DB_HOST', 'localhost'),
                 user=os.getenv('DB_USER', 'root'),
-                password=os.getenv('DB_PASSWORD', 'senai123'),
+                password=os.getenv('DB_PASSWORD', ),
                 database=_get_db_name(),
             )
     else:
         config.update(
             host=os.getenv('DB_HOST', 'localhost'),
             user=os.getenv('DB_USER', 'root'),
-            password=os.getenv('DB_PASSWORD', 'senai123'),
+            password=os.getenv('DB_PASSWORD', ),
             database=_get_db_name(),
         )
 

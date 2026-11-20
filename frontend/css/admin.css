@@ -1,0 +1,110 @@
+    /* TOKENS LOCAIS E BASE */
+    body.admin-panel { background: #deeeff; }
+
+    /* TELA DE LOGIN */
+    #tela-login-admin {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display:flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 18% 12%, rgba(0,168,248,.22), transparent 42%),
+                  radial-gradient(circle at 82% 88%, rgba(0,152,232,.18), transparent 44%),
+                  linear-gradient(135deg, #002858 0%, #00417D 100%);
+      padding: 24px;
+    }
+    #tela-login-admin .box {
+      background: #FFFFFF;
+      padding: 36px 32px;
+      border: 1px solid #DCE5ED;
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0,40,88,.24);
+      width: 100%; max-width: 380px; text-align: center;
+    }
+    .login-logo {
+      display: block;
+      width: 210px;
+      max-width: 82%;
+      height: auto;
+      margin: 0 auto 20px;
+      object-fit: contain;
+    }
+    #tela-login-admin h1 {
+      margin: 0 0 8px;
+      font-family: 'Montserrat', sans-serif;
+      color: #002858; font-size: 32px; font-weight: 800;
+      letter-spacing: 3px; text-shadow: 0 0 8px rgba(0,40,88,.12);
+    }
+    #tela-login-admin h1 i { font-size: 28px; vertical-align: middle; }
+    #tela-login-admin p {
+      color: #5B6B7B; margin: 0 0 24px;
+      font-family: 'Inter', sans-serif; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 2px;
+    }
+    #tela-login-admin input {
+      width: 100%; padding: 12px 14px; font-size: 14px; text-align: center;
+      border: 1px solid #D3DEE9; border-radius: 8px;
+      margin-bottom: 14px; outline: none; box-sizing: border-box;
+      background: #FFFFFF; color: #172B42;
+      font-family: 'Inter', sans-serif;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+    #tela-login-admin input:focus { border-color: #0098E8; box-shadow: 0 0 0 3px rgba(0,152,232,.12); }
+    #tela-login-admin button {
+      width: 100%; padding: 12px 16px; font-size: 14px;
+      background: #0098E8; color: #FFFFFF; border: none; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-weight: 700; border-radius: 8px;
+      transition: background .18s ease, transform .18s ease;
+    }
+    #tela-login-admin button:hover { background: #0079BD; }
+    #tela-login-admin button:active { transform: translateY(1px); }
+    #tela-login-admin .erro { color: #D64550; margin-top: 12px; font-size: 13px; font-weight: 600; }
+
+    /* LAYOUT E SIDEBAR */
+    #hamburger {
+      display: none; position: fixed; top: 14px; left: 14px; z-index: 1000;
+      background: #FFFFFF; color: #002858;
+      border: 1px solid #DCE5ED; font-size: 20px;
+      width: 42px; height: 42px; border-radius: 8px; cursor: pointer;
+      align-items: center; justify-content: center;
+      box-shadow: 0 6px 18px rgba(0,40,88,.12);
+      transition: background .18s ease, border-color .18s ease;
+    }
+    #hamburger:hover { background: #F4F7FA; border-color: #0098E8; }
+
+    /* TOASTS */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      padding: 13px 18px; border-radius: 10px; color: #172B42;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+      max-width: 380px; word-break: break-word;
+      background: #FFFFFF; border: 1px solid #DCE5ED; border-left: 4px solid #0098E8;
+      box-shadow: 0 10px 30px rgba(0,40,88,.12);
+    }
+    .toast-sucesso { border-left-color: #2E9E5B; }
+    .toast-erro { border-left-color: #D64550; }
+
+    /* OVERLAY E UTILITÁRIOS */
+    #loading-overlay {
+      display: none; position: fixed; inset: 0; z-index: 99999;
+      background: rgba(244,247,250,.90); align-items: center; justify-content: center;
+      backdrop-filter: blur(3px);
+    }
+    #loading-overlay.ativo { display: flex; }
+    .spinner {
+      width: 38px; height: 38px;
+      border: 3px solid rgba(0,152,232,.18);
+      border-top-color: #0098E8; border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    body.loading #loading-overlay { display: flex; }
+
+    /* RESPONSIVIDADE */
+    @media (max-width: 850px) {
+      #hamburger { display: flex; z-index: 1002; }
+      aside.mobile-hidden { display: none; }
+      aside.mobile-show { display: flex; position: fixed; z-index: 1001; }
+    }

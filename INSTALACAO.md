@@ -122,6 +122,7 @@ cd backend
 
 # Criar ambiente virtual
 py -m venv venv
+ou python -m venv venv
 
 # Ativar o ambiente virtual
 venv\Scripts\activate

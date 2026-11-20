@@ -1,0 +1,103 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--texto);
+  display: flex;
+  background: var(--fundo);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(0, 229, 255, 0.3);
+  color: #fff;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+input,
+select,
+button,
+textarea {
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  border-radius: 0;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 14px;
+  outline: none;
+  transition: var(--transicao);
+}
+
+button:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+input,
+select,
+textarea {
+  background: var(--stripe);
+  color: var(--texto);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: rgba(0, 229, 255, 0.25);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.1);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+form button,
+.action {
+  border: none;
+  color: var(--navy);
+  background: var(--cyan);
+  font-family: 'Share Tech Mono', monospace;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  clip-path: var(--btn-clip-md);
+  transition: var(--transicao);
+}
+
+form button:hover,
+.action:hover {
+  background: var(--yellow);
+  box-shadow: none;
+}
+
+form button:active,
+.action:active {
+  transform: none;
+}

@@ -1,0 +1,219 @@
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: var(--box-bg);
+  padding: 20px;
+  border-radius: 0;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  transition: var(--transicao);
+}
+
+.card:hover {
+  box-shadow: 0 0 20px rgba(0,229,255,0.1);
+}
+
+.card span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--mid);
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.card span i {
+  font-size: 15px;
+  color: var(--azul);
+  opacity: .7;
+}
+
+.card-trend {
+  display: none;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.card-trend.up {
+  display: inline;
+  color: #34d399;
+}
+
+.card-trend.down {
+  display: inline;
+  color: #f87171;
+}
+
+.card-trend.neutral {
+  display: inline;
+  color: var(--muted);
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.card-skeleton strong {
+  color: transparent !important;
+  background: linear-gradient(90deg, rgba(148,163,184,.08) 25%, rgba(148,163,184,.16) 50%, rgba(148,163,184,.08) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 6px;
+  min-width: 80px;
+  min-height: 28px;
+}
+
+.card strong {
+  font-family: 'VT323', monospace;
+  font-size: 28px;
+  color: var(--cyan);
+  font-weight: bold;
+  transition: opacity .3s ease;
+}
+
+.card strong.flash {
+  animation: valueFlash .5s ease;
+}
+
+@keyframes valueFlash {
+  0% { opacity: .3; transform: translateY(3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.empty-list {
+  padding: 24px;
+  background: var(--box-bg);
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  color: var(--mid);
+  font-weight: 500;
+  text-align: center;
+  font-size: 15px;
+}
+
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15,23,42,.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal-backdrop.ativo {
+  display: flex;
+}
+
+.modal-panel {
+  width: min(560px, 100%);
+  max-height: min(640px, 90vh);
+  overflow: hidden;
+  background: var(--box-bg);
+  border-radius: 0;
+  border: 2px solid rgba(0, 229, 255, 0.2);
+  box-shadow: var(--sombra-alta);
+  animation: modalIn .2s ease-out;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(.96) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 2px solid rgba(0, 229, 255, 0.15);
+  background: var(--stripe);
+}
+
+.modal-head h3 {
+  margin: 0;
+  font-family: 'Oswald', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--cyan);
+}
+
+.modal-head button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(0, 229, 255, 0.15);
+  color: var(--mid);
+  background: transparent;
+  font-size: 22px;
+  cursor: pointer;
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transicao);
+}
+
+.modal-head button:hover {
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--cyan);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.pagination button {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-sm);
+  background: transparent;
+  color: var(--texto);
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transicao);
+}
+
+.pagination button:hover:not(:disabled) {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.pagination button.active {
+  background: var(--cyan);
+  color: var(--navy);
+  border-color: var(--cyan);
+  font-weight: 700;
+}
+
+.pagination button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.btn-clip-sm { clip-path: var(--btn-clip-sm); }
+.btn-clip-md { clip-path: var(--btn-clip-md); }
+.btn-clip-lg { clip-path: var(--btn-clip-lg); }
